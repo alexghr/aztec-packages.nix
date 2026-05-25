@@ -1,0 +1,123 @@
+{
+  description = "Unofficial binary Nix flake for Aztec development tooling";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+  };
+
+  outputs = inputs @ {
+    self,
+    flake-parts,
+    ...
+  }:
+    flake-parts.lib.mkFlake {inherit inputs;} {
+      systems = [
+        "x86_64-linux"
+      ];
+
+      perSystem = {
+        config,
+        lib,
+        pkgs,
+        system,
+        ...
+      }: let
+        versions = builtins.fromJSON (builtins.readFile ./versions.json);
+
+        normalizeTag = tag:
+          lib.replaceStrings ["." "-" "+"] ["_" "_" "_"] tag;
+
+        mkRelease = tag: release: let
+          barretenberg = pkgs.callPackage ./pkgs/barretenberg-bin.nix {
+            inherit tag release system;
+          };
+          noir = pkgs.callPackage ./pkgs/noir-bin.nix {
+            inherit tag release system;
+          };
+          contracts = pkgs.callPackage ./pkgs/contracts.nix {
+            inherit tag release system;
+          };
+          node-runtime = pkgs.callPackage ./pkgs/node-runtime.nix {
+            inherit tag release system barretenberg noir contracts;
+          };
+          aztec-bin = pkgs.callPackage ./pkgs/aztec-bin.nix {
+            inherit tag release system barretenberg noir contracts node-runtime;
+          };
+        in {
+          inherit aztec-bin barretenberg contracts node-runtime noir;
+        };
+
+        releases = lib.mapAttrs mkRelease versions.releases;
+        latest = releases.${versions.latest};
+
+        versionedPackages =
+          lib.concatMapAttrs (
+            tag: packages: let
+              suffix = normalizeTag tag;
+            in {
+              "aztec-bin-${suffix}" = packages.aztec-bin;
+              "aztec-bb-${suffix}" = packages.barretenberg;
+              "aztec-contracts-${suffix}" = packages.contracts;
+              "aztec-node-runtime-${suffix}" = packages.node-runtime;
+              "aztec-noir-${suffix}" = packages.noir;
+            }
+          )
+          releases;
+
+        mkApp = description: program: {
+          type = "app";
+          inherit program;
+          meta.description = description;
+        };
+      in {
+        formatter = pkgs.writeShellApplication {
+          name = "alejandra-wrapper";
+          runtimeInputs = [pkgs.alejandra];
+          text = ''
+            if [ "$#" -eq 0 ]; then
+              exec alejandra .
+            fi
+            exec alejandra "$@"
+          '';
+        };
+
+        packages =
+          {
+            default = latest.aztec-bin;
+            aztec-bin = latest.aztec-bin;
+            aztec-bb = latest.barretenberg;
+            aztec-contracts = latest.contracts;
+            aztec-node-runtime = latest.node-runtime;
+            aztec-noir = latest.noir;
+          }
+          // versionedPackages;
+
+        apps = {
+          default = config.apps.aztec;
+          aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
+          aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
+          "bb-avm" = mkApp "Run Barretenberg" "${config.packages.aztec-bin}/bin/bb-avm";
+          nargo = mkApp "Run Noir nargo" "${config.packages.aztec-bin}/bin/nargo";
+        };
+
+        checks.smoke = pkgs.runCommand "aztec-bin-smoke" {} ''
+          ${pkgs.bash}/bin/bash ${./scripts/smoke-test.sh} ${config.packages.aztec-bin}
+          touch $out
+        '';
+
+        devShells.default = pkgs.mkShell {
+          packages = [
+            config.packages.aztec-bin
+            pkgs.git
+            pkgs.jq
+            pkgs.nodejs_24
+            pkgs.pnpm
+          ];
+
+          AZTEC_CONTRACTS_DIR = "${config.packages.aztec-bin}/share/aztec/contracts";
+          SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+        };
+      };
+    };
+}

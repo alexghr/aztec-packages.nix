@@ -1,0 +1,79 @@
+{
+  "latest": "v4.3.0",
+  "releases": {
+    "v4.3.0": {
+      "version": "4.3.0",
+      "nodeVersion": "24.12.0",
+      "upstream": {
+        "repository": "AztecProtocol/aztec-packages",
+        "releaseUrl": "https://github.com/AztecProtocol/aztec-packages/releases/tag/v4.3.0",
+        "installBaseUrl": "https://install.aztec-labs.com/4.3.0"
+      },
+      "systems": {
+        "x86_64-linux": {
+          "barretenberg": {
+            "name": "barretenberg-avm-amd64-linux.tar.gz",
+            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.3.0/barretenberg-avm-amd64-linux.tar.gz",
+            "hash": "sha256-9qkjI+983/C4Esx0K6AUvExfJPYvGTyUXzJrYHvpPLs="
+          },
+          "noir": {
+            "name": "noir-x86_64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-x86_64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-rRCflSRqRdK9sHkAv+yhc5Jcp6SjicLhH7Rx9zKazk0="
+          }
+        }
+      },
+      "npm": {
+        "aztec": {
+          "package": "@aztec/aztec",
+          "url": "https://registry.npmjs.org/@aztec/aztec/-/aztec-4.3.0.tgz",
+          "hash": "sha512-T2vj369bsAHCiz6qSSogIIdS2FdM/tDNq1K1zXsNpssdx+YuH0hgjfyCEK1Y2rD7nT7vfWoIhyZcA/z76mlVBw=="
+        },
+        "cli": {
+          "package": "@aztec/cli",
+          "url": "https://registry.npmjs.org/@aztec/cli/-/cli-4.3.0.tgz",
+          "hash": "sha512-EO5rypCWQb7fZAYHkZRDslSvhzu2GF290JgTJ3e+8GOB7MsKTgZNHnJFG6srQ3rdp4uiRrUELwLLSqFxj3zz/A=="
+        },
+        "cliWallet": {
+          "package": "@aztec/cli-wallet",
+          "url": "https://registry.npmjs.org/@aztec/cli-wallet/-/cli-wallet-4.3.0.tgz",
+          "hash": "sha512-EXhtvySKBTys71yTkue/KojKXOIitDlYhtw35fDILCoItnR6eVfrV8gW0l6zOFBrpwrtwUf5DajU49eJnMp6rA=="
+        },
+        "bbJs": {
+          "package": "@aztec/bb.js",
+          "url": "https://registry.npmjs.org/@aztec/bb.js/-/bb.js-4.3.0.tgz",
+          "hash": "sha512-/MsqmXid2c6Mt5QUcWhjA9l2N0BmnGPDTmTjS5uco/2dS1CTNlDwsOSHw3SVY8yhFXCt7Beig5AFCXY/bhJmHg=="
+        },
+        "noirContractsJs": {
+          "package": "@aztec/noir-contracts.js",
+          "url": "https://registry.npmjs.org/@aztec/noir-contracts.js/-/noir-contracts.js-4.3.0.tgz",
+          "hash": "sha512-kzjqiJC5wuFvB+hwEVFQRA4THZPtoU4p53E8efYI1vY6fEZcE9tgTRm78gBpwES7Va91EhaR/E/NFbS/hzo+TA=="
+        },
+        "noirTestContractsJs": {
+          "package": "@aztec/noir-test-contracts.js",
+          "url": "https://registry.npmjs.org/@aztec/noir-test-contracts.js/-/noir-test-contracts.js-4.3.0.tgz",
+          "hash": "sha512-ReDv4AuPjExD+lDqz5SDDs1ohxvLLe0rlvwMum3LL1ET83OBFKEc9Joj1gFlfZ8JljLboNTSp0bOTLsQESPtTA=="
+        },
+        "protocolContracts": {
+          "package": "@aztec/protocol-contracts",
+          "url": "https://registry.npmjs.org/@aztec/protocol-contracts/-/protocol-contracts-4.3.0.tgz",
+          "hash": "sha512-hA/qF2ghgw0AiX90q8ngahfrKgDhBUGx26y7N8KKKmvIUW/nwaBrxPOu5NZ2QijPpecfownoTxzwo1kVgfbhFw=="
+        },
+        "l1Artifacts": {
+          "package": "@aztec/l1-artifacts",
+          "url": "https://registry.npmjs.org/@aztec/l1-artifacts/-/l1-artifacts-4.3.0.tgz",
+          "hash": "sha512-ObDO5ik3GX0rZH8Yb92AcIsnUNFqj9Qev0gWDhG3D/9+AtBy1dEcI1M2gMPZQj08uqOZsvdUqJh2Jds/duj9lw=="
+        }
+      },
+      "npmDepsHash": "sha256-U6VqbP5ek5FX0ZJTMj1l7FR+e41sm0+BtN0HfCF9OxQ=",
+      "notes": {
+        "unconfirmed": [
+          "The Noir release tarball does not include a standalone acvm binary, so ACVM_BINARY_PATH is intentionally not set yet.",
+          "aarch64-linux is not exposed because v4.3.0 does not have a production Barretenberg release asset for that system.",
+          "The Node CLI runtime is generated from npm package metadata, not from a dedicated upstream runtime tarball."
+        ]
+      }
+    }
+  },
+  "unsupported": {}
+}
