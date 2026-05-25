@@ -10,7 +10,8 @@ required.
 
 ## Status
 
-Phase 1 proof of concept. The pinned release is `v4.3.0`.
+Phase 1 proof of concept. The default channel is `stable-v4`, currently pinned
+to `v4.3.0`.
 
 Working on `x86_64-linux`:
 
@@ -89,6 +90,18 @@ devShells.${system}.default
 Versioned package names are also generated from `versions.json`, for example
 `aztec-bin-v4_3_0`.
 
+Mirrored channels also get package and app aliases. The initial channels are:
+
+```text
+stable-v4  -> latest stable v4 release
+nightly-v4 -> latest v4 nightly release
+nightly-v5 -> latest v5 nightly release
+```
+
+Nix output names normalize channel dashes to underscores, for example
+`aztec-bin-stable_v4` and `apps.${system}.aztec-stable_v4`. Nightly channel
+outputs appear after their first release has been mirrored into `versions.json`.
+
 ## Release Inputs
 
 The `versions.json` manifest is the source of truth. For `v4.3.0` it pins:
@@ -97,8 +110,8 @@ The `versions.json` manifest is the source of truth. For `v4.3.0` it pins:
   the upstream asset named `barretenberg-avm-amd64-linux.tar.gz`.
 - Noir binaries from the `noir-lang/noir` release named by the upstream
   installer `versions` file.
-- Aztec CLI npm packages, with a checked-in `node-runtime/package-lock.json`
-  and fixed `npmDepsHash`.
+- Aztec CLI npm packages, with a per-release
+  `node-runtime/<tag>/package-lock.json` and fixed `npmDepsHash`.
 - Contract artifacts from `@aztec/noir-contracts.js`,
   `@aztec/noir-test-contracts.js`, `@aztec/protocol-contracts`, and
   `@aztec/l1-artifacts`.
@@ -113,43 +126,57 @@ Collect release metadata:
 ```bash
 scripts/update-release.sh v4.3.0 --dry-run
 scripts/update-release.sh v4.3.0
-scripts/update-release.sh v4.4.0 --set-latest
+scripts/update-release.sh v4.4.0-nightly.20260525 --set-channel nightly-v4
 ```
 
-After adding a release, regenerate `node-runtime/package-lock.json` for that
-version and build once to replace the placeholder `npmDepsHash` reported by
-Nix.
+After adding a release manually, regenerate the matching
+`node-runtime/<tag>/package-lock.json` and build once to replace the placeholder
+`npmDepsHash` reported by Nix.
 
 `scripts/mirror-release.sh` automates the full local mirror step:
 
 ```bash
-scripts/mirror-release.sh v4.3.0
+scripts/mirror-release.sh --channel stable-v4 v4.3.0
+scripts/mirror-release.sh --channel nightly-v4 v4.4.0-nightly.20260525
 ```
 
-It updates `versions.json`, `node-runtime/package.json`,
-`node-runtime/package-lock.json`, and the release `npmDepsHash`.
+It updates `versions.json`, the per-release Node runtime files, and the release
+`npmDepsHash`.
+
+`scripts/mirror-channels.sh` resolves channel patterns from `versions.json` and
+mirrors any channel that has moved upstream:
+
+```bash
+scripts/mirror-channels.sh
+scripts/mirror-channels.sh --channel nightly-v5
+scripts/mirror-channels.sh --tag v5.0.0-nightly.20260525
+scripts/mirror-channels.sh --channel nightly-v4 --tag v4.4.0-nightly.20260525
+```
 
 ## Release Mirror Automation
 
 `.github/workflows/mirror-release.yml` mirrors upstream Aztec releases into pull
-requests. It can be triggered manually with a `tag` input, by the daily cron, or
-by a `repository_dispatch` event of type `aztec-packages-release`.
+requests. It can be triggered manually with optional `channel` and `tag` inputs,
+by the daily cron, or by a `repository_dispatch` event of type
+`aztec-packages-release`.
 
-The dispatch payload should include either `client_payload.tag` or
-`client_payload.release.tag_name`:
+The dispatch payload may include `client_payload.channel` and either
+`client_payload.tag` or `client_payload.release.tag_name`. When `channel` is
+omitted, the workflow updates every configured channel whose pattern matches
+the tag:
 
 ```json
 {
   "event_type": "aztec-packages-release",
   "client_payload": {
-    "tag": "v4.3.0"
+    "tag": "v5.0.0-nightly.20260525"
   }
 }
 ```
 
-Scheduled runs poll the latest GitHub release from
-`AztecProtocol/aztec-packages` and skip work when that tag is already mirrored
-as `versions.latest`.
+Scheduled runs poll the configured channel patterns from
+`AztecProtocol/aztec-packages` and skip channels whose current tag is already
+mirrored.
 
 The workflow uses Cachix cache `alexghr` by default. Override it with the
 repository variable `CACHIX_CACHE_NAME`. Set the repository secret
