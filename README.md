@@ -120,6 +120,42 @@ After adding a release, regenerate `node-runtime/package-lock.json` for that
 version and build once to replace the placeholder `npmDepsHash` reported by
 Nix.
 
+`scripts/mirror-release.sh` automates the full local mirror step:
+
+```bash
+scripts/mirror-release.sh v4.3.0
+```
+
+It updates `versions.json`, `node-runtime/package.json`,
+`node-runtime/package-lock.json`, and the release `npmDepsHash`.
+
+## Release Mirror Automation
+
+`.github/workflows/mirror-release.yml` mirrors upstream Aztec releases into pull
+requests. It can be triggered manually with a `tag` input, by the daily cron, or
+by a `repository_dispatch` event of type `aztec-packages-release`.
+
+The dispatch payload should include either `client_payload.tag` or
+`client_payload.release.tag_name`:
+
+```json
+{
+  "event_type": "aztec-packages-release",
+  "client_payload": {
+    "tag": "v4.3.0"
+  }
+}
+```
+
+Scheduled runs poll the latest GitHub release from
+`AztecProtocol/aztec-packages` and skip work when that tag is already mirrored
+as `versions.latest`.
+
+The workflow uses Cachix cache `alexghr` by default. Override it with the
+repository variable `CACHIX_CACHE_NAME`. Set the repository secret
+`CACHIX_AUTH_TOKEN` to push build results; without it, the workflow configures
+Cachix in pull-only mode.
+
 ## Smoke Testing
 
 After building or entering a dev shell:
