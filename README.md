@@ -108,6 +108,8 @@ The `versions.json` manifest is the source of truth. For `v4.3.0` it pins:
 
 - Barretenberg tarballs from the Aztec GitHub release. For `v4.3.0`, this is
   the upstream asset named `barretenberg-avm-amd64-linux.tar.gz`.
+- Foundry binaries from the `foundry-rs/foundry` release named by the upstream
+  installer `versions` file.
 - Noir binaries from the `noir-lang/noir` release named by the upstream
   installer `versions` file.
 - Aztec CLI npm packages, with a per-release
@@ -217,7 +219,8 @@ where those tools are available.
 
 ## Known Limitations
 
-- `aztec start --local-network` has not been promoted into an automated check.
+- `aztec start --local-network` is manually verified, but has not been promoted
+  into an automated check.
 - The Noir release tarball used here does not include a standalone `acvm`
   binary, so `ACVM_BINARY_PATH` is intentionally not set yet.
 - Only `x86_64-linux` is exposed for now; `v4.3.0` does not publish the

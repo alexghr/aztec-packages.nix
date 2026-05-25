@@ -77,30 +77,56 @@ in
     ];
 
     installPhase = ''
-      runHook preInstall
+            runHook preInstall
 
-      mkdir -p $out/lib/aztec/node $out/bin
-      cp -R node_modules package.json package-lock.json $out/lib/aztec/node/
-      chmod -R u+w $out/lib/aztec/node
-      patchShebangs $out/lib/aztec/node/node_modules/.bin || true
-      patchShebangs $out/lib/aztec/node/node_modules/@aztec || true
+            mkdir -p $out/lib/aztec/node $out/bin
+            cp -R node_modules package.json package-lock.json $out/lib/aztec/node/
+            chmod -R u+w $out/lib/aztec/node
+            patchShebangs $out/lib/aztec/node/node_modules/.bin || true
+            patchShebangs $out/lib/aztec/node/node_modules/@aztec || true
 
-      npmBin=$out/lib/aztec/node/node_modules/.bin
+            deployJs=$out/lib/aztec/node/node_modules/@aztec/ethereum/dest/deploy_aztec_l1_contracts.js
+            substituteInPlace "$deployJs" \
+              --replace-fail \
+                "import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';" \
+                "import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'fs';"
+            substituteInPlace "$deployJs" \
+              --replace-fail \
+                "const JSON_DEPLOY_RESULT_PREFIX = 'JSON DEPLOY RESULT:';" \
+                "const JSON_DEPLOY_RESULT_PREFIX = 'JSON DEPLOY RESULT:';
+      function chmodWritableRecursive(path) {
+          const stat = statSync(path);
+          if (stat.isDirectory()) {
+              chmodSync(path, 0o700);
+              for (const entry of readdirSync(path)) {
+                  chmodWritableRecursive(join(path, entry));
+              }
+          } else {
+              chmodSync(path, stat.mode & 0o111 ? 0o700 : 0o600);
+          }
+      }"
+            substituteInPlace "$deployJs" \
+              --replace-fail \
+                "cpSync(join(basePath, 'foundry.lock'), join(tempDir, 'foundry.lock'));" \
+                "cpSync(join(basePath, 'foundry.lock'), join(tempDir, 'foundry.lock'));
+          chmodWritableRecursive(tempDir);"
 
-      wrapAztec() {
-        makeWrapper "$1" "$out/bin/$2" ${wrapperFlags}
-      }
+            npmBin=$out/lib/aztec/node/node_modules/.bin
 
-      wrapAztec "$npmBin/aztec" aztec
-      wrapAztec "$npmBin/aztec-wallet" aztec-wallet
+            wrapAztec() {
+              makeWrapper "$1" "$out/bin/$2" ${wrapperFlags}
+            }
 
-      for bin in pxe txe validator-client blob-client bb-cli; do
-        if [ -e "$npmBin/$bin" ]; then
-          wrapAztec "$npmBin/$bin" "aztec-$bin"
-        fi
-      done
+            wrapAztec "$npmBin/aztec" aztec
+            wrapAztec "$npmBin/aztec-wallet" aztec-wallet
 
-      runHook postInstall
+            for bin in pxe txe validator-client blob-client bb-cli; do
+              if [ -e "$npmBin/$bin" ]; then
+                wrapAztec "$npmBin/$bin" "aztec-$bin"
+              fi
+            done
+
+            runHook postInstall
     '';
 
     meta = {

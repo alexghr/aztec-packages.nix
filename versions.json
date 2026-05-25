@@ -19,6 +19,7 @@
     "v4.3.0": {
       "version": "4.3.0",
       "nodeVersion": "24.12.0",
+      "foundryVersion": "1.4.1",
       "nodeRuntime": {
         "path": "v4.3.0"
       },
@@ -38,6 +39,11 @@
             "name": "noir-x86_64-unknown-linux-gnu.tar.gz",
             "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-x86_64-unknown-linux-gnu.tar.gz",
             "hash": "sha256-rRCflSRqRdK9sHkAv+yhc5Jcp6SjicLhH7Rx9zKazk0="
+          },
+          "foundry": {
+            "name": "foundry_v1.4.1_linux_amd64.tar.gz",
+            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_linux_amd64.tar.gz",
+            "hash": "sha256-8bBE7pVEAoB8TdWl59KbIQ0k/TYzt/GZ0YTwNP+U2TQ="
           }
         }
       },

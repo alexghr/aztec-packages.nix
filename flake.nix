@@ -38,17 +38,20 @@
           noir = pkgs.callPackage ./pkgs/noir-bin.nix {
             inherit tag release system;
           };
+          foundry = pkgs.callPackage ./pkgs/foundry-bin.nix {
+            inherit tag release system;
+          };
           contracts = pkgs.callPackage ./pkgs/contracts.nix {
             inherit tag release system;
           };
           node-runtime = pkgs.callPackage ./pkgs/node-runtime.nix {
-            inherit tag release system barretenberg noir contracts;
+            inherit tag release system barretenberg noir contracts foundry;
           };
           aztec-bin = pkgs.callPackage ./pkgs/aztec-bin.nix {
-            inherit tag release system barretenberg noir contracts node-runtime;
+            inherit tag release system barretenberg noir contracts foundry node-runtime;
           };
         in {
-          inherit aztec-bin barretenberg contracts node-runtime noir;
+          inherit aztec-bin barretenberg contracts foundry node-runtime noir;
         };
 
         defaultChannel = "stable-v4";
@@ -77,6 +80,7 @@
               "aztec-bin-${suffix}" = packages.aztec-bin;
               "aztec-bb-${suffix}" = packages.barretenberg;
               "aztec-contracts-${suffix}" = packages.contracts;
+              "aztec-foundry-${suffix}" = packages.foundry;
               "aztec-node-runtime-${suffix}" = packages.node-runtime;
               "aztec-noir-${suffix}" = packages.noir;
             }
@@ -92,6 +96,7 @@
               "aztec-bin-${suffix}" = packages.aztec-bin;
               "aztec-bb-${suffix}" = packages.barretenberg;
               "aztec-contracts-${suffix}" = packages.contracts;
+              "aztec-foundry-${suffix}" = packages.foundry;
               "aztec-node-runtime-${suffix}" = packages.node-runtime;
               "aztec-noir-${suffix}" = packages.noir;
             }
@@ -132,6 +137,7 @@
             aztec-bin = latest.aztec-bin;
             aztec-bb = latest.barretenberg;
             aztec-contracts = latest.contracts;
+            aztec-foundry = latest.foundry;
             aztec-node-runtime = latest.node-runtime;
             aztec-noir = latest.noir;
           }

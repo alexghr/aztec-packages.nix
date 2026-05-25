@@ -79,9 +79,11 @@ done
 aztec_repo="AztecProtocol/aztec-packages"
 barretenberg_repo="AztecProtocol/barretenberg"
 noir_repo="noir-lang/noir"
+foundry_repo="foundry-rs/foundry"
 aztec_repo_api="https://api.github.com/repos/$aztec_repo"
 barretenberg_repo_api="https://api.github.com/repos/$barretenberg_repo"
 noir_repo_api="https://api.github.com/repos/$noir_repo"
+foundry_repo_api="https://api.github.com/repos/$foundry_repo"
 version=${tag#v}
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
@@ -89,6 +91,7 @@ trap 'rm -rf "$tmp_dir"' EXIT
 aztec_release_json="$tmp_dir/aztec-release.json"
 barretenberg_release_json="$tmp_dir/barretenberg-release.json"
 noir_release_json="$tmp_dir/noir-release.json"
+foundry_release_json="$tmp_dir/foundry-release.json"
 install_versions="$tmp_dir/install-versions"
 manifest_json="$tmp_dir/manifest.json"
 
@@ -116,15 +119,18 @@ fi
 
 node_version=""
 noir_version=""
+foundry_version=""
 if [ -s "$install_versions" ]; then
   node_version=$(awk -F: '/^node:/ {gsub(/^[ \t]+/, "", $2); print $2}' "$install_versions")
   noir_version=$(awk -F: '/^noir:/ {gsub(/^[ \t]+/, "", $2); print $2}' "$install_versions")
+  foundry_version=$(awk -F: '/^foundry:/ {gsub(/^[ \t]+/, "", $2); print $2}' "$install_versions")
 fi
 
 jq -n \
   --arg tag "$tag" \
   --arg version "$version" \
   --arg nodeVersion "$node_version" \
+  --arg foundryVersion "$foundry_version" \
   --arg upstreamRepo "$aztec_repo" \
   --arg releaseUrl "$release_url" \
   --arg installBaseUrl "https://install.aztec-labs.com/$version" \
@@ -134,6 +140,7 @@ jq -n \
       ($tag): {
         version: $version,
         nodeVersion: $nodeVersion,
+        foundryVersion: $foundryVersion,
         upstream: {
           repository: $upstreamRepo,
           releaseUrl: $releaseUrl,
@@ -195,7 +202,7 @@ asset_field() {
   local release_file
   local value
 
-  for release_file in "$aztec_release_json" "$barretenberg_release_json" "$noir_release_json"; do
+  for release_file in "$aztec_release_json" "$barretenberg_release_json" "$noir_release_json" "$foundry_release_json"; do
     if [ ! -s "$release_file" ]; then
       continue
     fi
@@ -215,6 +222,17 @@ system_asset_suffix() {
   case "$1" in
     x86_64-linux) echo "amd64-linux" ;;
     aarch64-linux) echo "arm64-linux" ;;
+    *)
+      echo "unsupported system: $1" >&2
+      return 1
+      ;;
+  esac
+}
+
+foundry_asset_suffix() {
+  case "$1" in
+    x86_64-linux) echo "linux_amd64" ;;
+    aarch64-linux) echo "linux_arm64" ;;
     *)
       echo "unsupported system: $1" >&2
       return 1
@@ -306,6 +324,21 @@ for system in x86_64-linux aarch64-linux; do
   suffix=$(system_asset_suffix "$system")
   add_github_asset "$system" barretenberg "barretenberg-avm-$suffix.tar.gz" 1
 done
+
+if [ -n "$foundry_version" ]; then
+  curl --fail --location --silent --show-error \
+    "$foundry_repo_api/releases/tags/v$foundry_version" \
+    --output "$foundry_release_json" || add_unsupported_reason "missing Foundry release v$foundry_version"
+
+  if [ -s "$foundry_release_json" ]; then
+    for system in x86_64-linux aarch64-linux; do
+      suffix=$(foundry_asset_suffix "$system")
+      add_github_asset "$system" foundry "foundry_v${foundry_version}_${suffix}.tar.gz" 1
+    done
+  fi
+else
+  add_unsupported_reason "missing Foundry version in install versions file"
+fi
 
 if [ -n "$noir_version" ]; then
   curl --fail --location --silent --show-error \
