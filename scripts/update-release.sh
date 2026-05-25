@@ -1,0 +1,351 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'EOF'
+Usage: scripts/update-release.sh <tag> [--dry-run] [--set-latest] [--versions-json PATH]
+
+Collects confirmed release metadata for an Aztec tag and merges it into
+versions.json by default. Use --dry-run to print the generated manifest fragment
+without writing. Existing latest values are preserved unless --set-latest is
+passed.
+
+Required tools: curl, git, jq, nix.
+EOF
+}
+
+tag=""
+dry_run=0
+set_latest=0
+versions_json="versions.json"
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --dry-run)
+      dry_run=1
+      ;;
+    --set-latest)
+      set_latest=1
+      ;;
+    --versions-json)
+      shift
+      versions_json=${1:-}
+      if [ -z "$versions_json" ]; then
+        echo "--versions-json requires a path" >&2
+        exit 2
+      fi
+      ;;
+    --*)
+      echo "unknown option: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+    *)
+      if [ -n "$tag" ]; then
+        echo "only one tag may be provided" >&2
+        exit 2
+      fi
+      tag=$1
+      ;;
+  esac
+  shift
+done
+
+if [ -z "$tag" ]; then
+  usage >&2
+  exit 2
+fi
+
+for tool in curl git jq nix; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "required tool not found: $tool" >&2
+    exit 1
+  fi
+done
+
+aztec_repo="AztecProtocol/aztec-packages"
+barretenberg_repo="AztecProtocol/barretenberg"
+noir_repo="noir-lang/noir"
+aztec_repo_api="https://api.github.com/repos/$aztec_repo"
+barretenberg_repo_api="https://api.github.com/repos/$barretenberg_repo"
+noir_repo_api="https://api.github.com/repos/$noir_repo"
+version=${tag#v}
+tmp_dir=$(mktemp -d)
+trap 'rm -rf "$tmp_dir"' EXIT
+
+aztec_release_json="$tmp_dir/aztec-release.json"
+barretenberg_release_json="$tmp_dir/barretenberg-release.json"
+noir_release_json="$tmp_dir/noir-release.json"
+install_versions="$tmp_dir/install-versions"
+manifest_json="$tmp_dir/manifest.json"
+
+if ! git ls-remote --exit-code --tags "https://github.com/$aztec_repo.git" "refs/tags/$tag" >/dev/null; then
+  echo "upstream tag not found in $aztec_repo: $tag" >&2
+  exit 1
+fi
+
+curl --fail --location --silent --show-error \
+  "$aztec_repo_api/releases/tags/$tag" \
+  --output "$aztec_release_json" || true
+
+curl --fail --location --silent --show-error \
+  "$barretenberg_repo_api/releases/tags/$tag" \
+  --output "$barretenberg_release_json" || true
+
+curl --fail --location --silent --show-error \
+  "https://install.aztec-labs.com/$version/versions" \
+  --output "$install_versions" || true
+
+release_url="https://github.com/$aztec_repo/releases/tag/$tag"
+if [ -s "$aztec_release_json" ]; then
+  release_url=$(jq -r '.html_url // empty' "$aztec_release_json")
+fi
+
+node_version=""
+noir_version=""
+if [ -s "$install_versions" ]; then
+  node_version=$(awk -F: '/^node:/ {gsub(/^[ \t]+/, "", $2); print $2}' "$install_versions")
+  noir_version=$(awk -F: '/^noir:/ {gsub(/^[ \t]+/, "", $2); print $2}' "$install_versions")
+fi
+
+jq -n \
+  --arg tag "$tag" \
+  --arg version "$version" \
+  --arg nodeVersion "$node_version" \
+  --arg upstreamRepo "$aztec_repo" \
+  --arg releaseUrl "$release_url" \
+  --arg installBaseUrl "https://install.aztec-labs.com/$version" \
+  '{
+    latest: $tag,
+    releases: {
+      ($tag): {
+        version: $version,
+        nodeVersion: $nodeVersion,
+        upstream: {
+          repository: $upstreamRepo,
+          releaseUrl: $releaseUrl,
+          installBaseUrl: $installBaseUrl
+        },
+        systems: {},
+        npm: {},
+        npmDepsHash: "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+        notes: {
+          unconfirmed: [
+            "Run npm install --package-lock-only in node-runtime and rebuild to update npmDepsHash for this release.",
+            "The Noir release tarball does not include a standalone acvm binary, so ACVM_BINARY_PATH is intentionally not set yet.",
+            "Final installed contract artifact layout is intentionally conservative."
+          ]
+        }
+      }
+    },
+    unsupported: {}
+  }' > "$manifest_json"
+
+replace_manifest() {
+  local next="$tmp_dir/manifest.next.json"
+  jq "$@" "$manifest_json" > "$next"
+  mv "$next" "$manifest_json"
+}
+
+add_unsupported_reason() {
+  local reason=$1
+
+  replace_manifest \
+    --arg tag "$tag" \
+    --arg reason "$reason" \
+    '.unsupported[$tag].reasons = ((.unsupported[$tag].reasons // []) + [$reason])'
+}
+
+sri_from_digest() {
+  local digest=$1
+
+  case "$digest" in
+    sha256:*)
+      nix hash convert --hash-algo sha256 --to sri "${digest#sha256:}"
+      ;;
+    "")
+      return 1
+      ;;
+    *)
+      echo "unsupported GitHub asset digest format: $digest" >&2
+      return 1
+      ;;
+  esac
+}
+
+asset_field() {
+  local asset_name=$1
+  local field=$2
+  local release_file
+  local value
+
+  for release_file in "$aztec_release_json" "$barretenberg_release_json" "$noir_release_json"; do
+    if [ ! -s "$release_file" ]; then
+      continue
+    fi
+
+    value=$(jq -r --arg name "$asset_name" --arg field "$field" \
+      '.assets[]? | select(.name == $name) | .[$field] // empty' \
+      "$release_file" | head -n 1)
+
+    if [ -n "$value" ]; then
+      echo "$value"
+      return 0
+    fi
+  done
+}
+
+system_asset_suffix() {
+  case "$1" in
+    x86_64-linux) echo "amd64-linux" ;;
+    aarch64-linux) echo "arm64-linux" ;;
+    *)
+      echo "unsupported system: $1" >&2
+      return 1
+      ;;
+  esac
+}
+
+add_github_asset() {
+  local system=$1
+  local key=$2
+  local asset_name=$3
+  local required=$4
+  local url=""
+  local digest=""
+  local hash=""
+
+  url=$(asset_field "$asset_name" browser_download_url)
+  digest=$(asset_field "$asset_name" digest)
+
+  if [ -z "$url" ]; then
+    if [ "$required" = "1" ]; then
+      add_unsupported_reason "missing GitHub release asset $asset_name"
+    fi
+    return
+  fi
+
+  if ! hash=$(sri_from_digest "$digest"); then
+    echo "prefetching $asset_name because GitHub digest was unavailable"
+    hash=$(nix store prefetch-file --json "$url" | jq -r '.hash')
+  fi
+
+  replace_manifest \
+    --arg tag "$tag" \
+    --arg system "$system" \
+    --arg key "$key" \
+    --arg name "$asset_name" \
+    --arg url "$url" \
+    --arg hash "$hash" \
+    '.releases[$tag].systems[$system][$key] = {
+      name: $name,
+      url: $url,
+      hash: $hash
+    }'
+}
+
+add_npm_package() {
+  local key=$1
+  local package=$2
+  local encoded=${package//@/%40}
+  local npm_json="$tmp_dir/npm-$key.json"
+  local metadata_url=""
+  local tarball=""
+  local integrity=""
+  local shasum=""
+
+  encoded=${encoded//\//%2F}
+  metadata_url="https://registry.npmjs.org/$encoded/$version"
+
+  if ! curl --fail --location --silent --show-error "$metadata_url" --output "$npm_json"; then
+    add_unsupported_reason "missing npm package $package@$version"
+    return
+  fi
+
+  tarball=$(jq -r '.dist.tarball // empty' "$npm_json")
+  integrity=$(jq -r '.dist.integrity // empty' "$npm_json")
+  shasum=$(jq -r '.dist.shasum // empty' "$npm_json")
+
+  if [ -z "$tarball" ] || [ -z "$integrity" ]; then
+    add_unsupported_reason "npm package $package@$version is missing tarball or integrity metadata"
+    return
+  fi
+
+  replace_manifest \
+    --arg tag "$tag" \
+    --arg key "$key" \
+    --arg package "$package" \
+    --arg url "$tarball" \
+    --arg hash "$integrity" \
+    --arg shasum "$shasum" \
+    '.releases[$tag].npm[$key] = {
+      package: $package,
+      url: $url,
+      hash: $hash,
+      shasum: $shasum
+    }'
+}
+
+for system in x86_64-linux aarch64-linux; do
+  suffix=$(system_asset_suffix "$system")
+  add_github_asset "$system" barretenberg "barretenberg-avm-$suffix.tar.gz" 1
+done
+
+if [ -n "$noir_version" ]; then
+  curl --fail --location --silent --show-error \
+    "$noir_repo_api/releases/tags/$noir_version" \
+    --output "$noir_release_json" || add_unsupported_reason "missing Noir release $noir_version"
+
+  if [ -s "$noir_release_json" ]; then
+    add_github_asset x86_64-linux noir "noir-x86_64-unknown-linux-gnu.tar.gz" 1
+    add_github_asset aarch64-linux noir "noir-aarch64-unknown-linux-gnu.tar.gz" 1
+  fi
+else
+  add_unsupported_reason "missing Noir version in install versions file"
+fi
+
+add_npm_package aztec "@aztec/aztec"
+add_npm_package cli "@aztec/cli"
+add_npm_package cliWallet "@aztec/cli-wallet"
+add_npm_package bbJs "@aztec/bb.js"
+add_npm_package noirContractsJs "@aztec/noir-contracts.js"
+add_npm_package noirTestContractsJs "@aztec/noir-test-contracts.js"
+add_npm_package protocolContracts "@aztec/protocol-contracts"
+add_npm_package l1Artifacts "@aztec/l1-artifacts"
+
+replace_manifest \
+  --arg tag "$tag" \
+  '.releases[$tag].systems |= with_entries(select(.value.barretenberg?))'
+
+replace_manifest \
+  --arg tag "$tag" \
+  'if ((.unsupported[$tag].reasons // []) | length) == 0
+   then del(.unsupported[$tag])
+   else .
+   end'
+
+if [ "$dry_run" -eq 1 ]; then
+  jq . "$manifest_json"
+  exit 0
+fi
+
+if [ -f "$versions_json" ]; then
+  next_versions="$tmp_dir/versions.next.json"
+  jq -s --argjson setLatest "$set_latest" '
+    .[0] as $base |
+    .[1] as $incoming |
+    $base
+    | .latest = (if $setLatest or (.latest == null) then $incoming.latest else .latest end)
+    | .releases = ((.releases // {}) + $incoming.releases)
+    | .unsupported = ((.unsupported // {}) + ($incoming.unsupported // {}))
+  ' "$versions_json" "$manifest_json" > "$next_versions"
+  mv "$next_versions" "$versions_json"
+else
+  cp "$manifest_json" "$versions_json"
+fi
+
+echo "updated $versions_json for $tag"
