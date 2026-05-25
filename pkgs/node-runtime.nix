@@ -24,6 +24,8 @@
   zlib,
   buildNpmPackage,
 }: let
+  nodeRuntimePath = release.nodeRuntime.path or tag;
+
   runtimePath = lib.makeBinPath [
     bash
     barretenberg
@@ -55,7 +57,7 @@ in
     pname = "aztec-node-runtime";
     version = release.version or tag;
 
-    src = ../node-runtime;
+    src = ../node-runtime + "/${nodeRuntimePath}";
     npmDepsHash = release.npmDepsHash;
     dontNpmBuild = true;
 

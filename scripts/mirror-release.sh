@@ -3,27 +3,53 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/mirror-release.sh <tag>
+Usage: scripts/mirror-release.sh [--channel NAME] <tag>
 
 Mirrors an Aztec upstream release into this flake:
 
-  - updates versions.json and marks the release as latest
-  - updates node-runtime/package.json dependency pins
-  - regenerates node-runtime/package-lock.json
+  - updates versions.json and, when provided, the channel pointer
+  - updates per-release node-runtime package pins
+  - regenerates the per-release node-runtime lockfile
   - refreshes the release npmDepsHash by rebuilding aztec-node-runtime
 
 The tag may be passed with or without the leading "v".
 EOF
 }
 
-case "${1:-}" in
-  -h|--help)
-    usage
-    exit 0
-    ;;
-esac
+channel=""
+tag=""
 
-if [ "$#" -ne 1 ]; then
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    --channel)
+      shift
+      channel=${1:-}
+      if [ -z "$channel" ]; then
+        echo "--channel requires a channel name" >&2
+        exit 2
+      fi
+      ;;
+    --*)
+      echo "unknown option: $1" >&2
+      usage >&2
+      exit 2
+      ;;
+    *)
+      if [ -n "$tag" ]; then
+        echo "only one tag may be provided" >&2
+        exit 2
+      fi
+      tag=$1
+      ;;
+  esac
+  shift
+done
+
+if [ -z "$tag" ]; then
   usage >&2
   exit 2
 fi
@@ -35,17 +61,19 @@ for tool in jq nix npm; do
   fi
 done
 
-tag=$1
 case "$tag" in
   v*) ;;
   *) tag="v$tag" ;;
 esac
 
 version=${tag#v}
-node_runtime_dir="node-runtime"
+attr_suffix=${tag//./_}
+attr_suffix=${attr_suffix//-/_}
+attr_suffix=${attr_suffix//+/_}
+node_runtime_dir="node-runtime/$tag"
 package_json="$node_runtime_dir/package.json"
 versions_json="versions.json"
-build_attr=${MIRROR_BUILD_ATTR:-.#aztec-node-runtime}
+build_attr=${MIRROR_BUILD_ATTR:-.#aztec-node-runtime-$attr_suffix}
 fake_hash="sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
@@ -74,19 +102,31 @@ extract_got_hash() {
   sed -nE 's/^.*got:[[:space:]]*(sha256-[A-Za-z0-9+\/=]+).*$/\1/p' "$log_file" | tail -n 1
 }
 
-if [ ! -f "$package_json" ]; then
-  echo "node runtime package file not found: $package_json" >&2
-  exit 1
+mkdir -p "$node_runtime_dir"
+
+update_args=("$tag")
+if [ -n "$channel" ]; then
+  update_args+=(--set-channel "$channel")
+fi
+if [ "$channel" = "stable-v4" ] || [ "${MIRROR_SET_LATEST:-0}" = "1" ]; then
+  update_args+=(--set-latest)
 fi
 
-scripts/update-release.sh "$tag" --set-latest
+scripts/update-release.sh "${update_args[@]}"
 
-update_json_file "$package_json" \
+jq -n \
   --arg version "$version" \
-  '.version = $version
-   | .dependencies["@aztec/aztec"] = $version
-   | .dependencies["@aztec/bb.js"] = $version
-   | .dependencies["@aztec/cli-wallet"] = $version'
+  '{
+    name: "aztec-node-runtime",
+    version: $version,
+    private: true,
+    type: "module",
+    dependencies: {
+      "@aztec/aztec": $version,
+      "@aztec/bb.js": $version,
+      "@aztec/cli-wallet": $version
+    }
+  }' > "$package_json"
 
 npm install \
   --package-lock-only \

@@ -28,6 +28,9 @@
         normalizeTag = tag:
           lib.replaceStrings ["." "-" "+"] ["_" "_" "_"] tag;
 
+        normalizeChannel = channel:
+          lib.replaceStrings ["." "-" "+"] ["_" "_" "_"] channel;
+
         mkRelease = tag: release: let
           barretenberg = pkgs.callPackage ./pkgs/barretenberg-bin.nix {
             inherit tag release system;
@@ -48,8 +51,23 @@
           inherit aztec-bin barretenberg contracts node-runtime noir;
         };
 
+        defaultChannel = "stable-v4";
         releases = lib.mapAttrs mkRelease versions.releases;
-        latest = releases.${versions.latest};
+        defaultTag =
+          if
+            versions ? channels
+            && builtins.hasAttr defaultChannel versions.channels
+            && versions.channels.${defaultChannel} ? tag
+          then versions.channels.${defaultChannel}.tag
+          else versions.latest;
+        latest = releases.${defaultTag};
+
+        mirroredChannels =
+          lib.filterAttrs (
+            _: channel:
+              channel ? tag && builtins.hasAttr channel.tag releases
+          )
+          (versions.channels or {});
 
         versionedPackages =
           lib.concatMapAttrs (
@@ -64,6 +82,32 @@
             }
           )
           releases;
+
+        channelPackages =
+          lib.concatMapAttrs (
+            channel: metadata: let
+              suffix = normalizeChannel channel;
+              packages = releases.${metadata.tag};
+            in {
+              "aztec-bin-${suffix}" = packages.aztec-bin;
+              "aztec-bb-${suffix}" = packages.barretenberg;
+              "aztec-contracts-${suffix}" = packages.contracts;
+              "aztec-node-runtime-${suffix}" = packages.node-runtime;
+              "aztec-noir-${suffix}" = packages.noir;
+            }
+          )
+          mirroredChannels;
+
+        channelApps =
+          lib.concatMapAttrs (
+            channel: metadata: let
+              suffix = normalizeChannel channel;
+              packages = releases.${metadata.tag};
+            in {
+              "aztec-${suffix}" = mkApp "Run the Aztec CLI for ${channel}" "${packages.aztec-bin}/bin/aztec";
+            }
+          )
+          mirroredChannels;
 
         mkApp = description: program: {
           type = "app";
@@ -91,15 +135,18 @@
             aztec-node-runtime = latest.node-runtime;
             aztec-noir = latest.noir;
           }
-          // versionedPackages;
+          // versionedPackages
+          // channelPackages;
 
-        apps = {
-          default = config.apps.aztec;
-          aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
-          aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
-          "bb-avm" = mkApp "Run Barretenberg" "${config.packages.aztec-bin}/bin/bb-avm";
-          nargo = mkApp "Run Noir nargo" "${config.packages.aztec-bin}/bin/nargo";
-        };
+        apps =
+          {
+            default = config.apps.aztec;
+            aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
+            aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
+            "bb-avm" = mkApp "Run Barretenberg" "${config.packages.aztec-bin}/bin/bb-avm";
+            nargo = mkApp "Run Noir nargo" "${config.packages.aztec-bin}/bin/nargo";
+          }
+          // channelApps;
 
         checks.smoke = pkgs.runCommand "aztec-bin-smoke" {} ''
           ${pkgs.bash}/bin/bash ${./scripts/smoke-test.sh} ${config.packages.aztec-bin}

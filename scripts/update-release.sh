@@ -3,12 +3,12 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/update-release.sh <tag> [--dry-run] [--set-latest] [--versions-json PATH]
+Usage: scripts/update-release.sh <tag> [--dry-run] [--set-latest] [--set-channel NAME] [--versions-json PATH]
 
 Collects confirmed release metadata for an Aztec tag and merges it into
 versions.json by default. Use --dry-run to print the generated manifest fragment
 without writing. Existing latest values are preserved unless --set-latest is
-passed.
+passed. Use --set-channel to update a named release channel pointer.
 
 Required tools: curl, git, jq, nix.
 EOF
@@ -17,6 +17,7 @@ EOF
 tag=""
 dry_run=0
 set_latest=0
+set_channel=""
 versions_json="versions.json"
 
 while [ "$#" -gt 0 ]; do
@@ -30,6 +31,14 @@ while [ "$#" -gt 0 ]; do
       ;;
     --set-latest)
       set_latest=1
+      ;;
+    --set-channel)
+      shift
+      set_channel=${1:-}
+      if [ -z "$set_channel" ]; then
+        echo "--set-channel requires a channel name" >&2
+        exit 2
+      fi
       ;;
     --versions-json)
       shift
@@ -129,6 +138,9 @@ jq -n \
           repository: $upstreamRepo,
           releaseUrl: $releaseUrl,
           installBaseUrl: $installBaseUrl
+        },
+        nodeRuntime: {
+          path: $tag
         },
         systems: {},
         npm: {},
@@ -335,11 +347,19 @@ fi
 
 if [ -f "$versions_json" ]; then
   next_versions="$tmp_dir/versions.next.json"
-  jq -s --argjson setLatest "$set_latest" '
+  jq -s --argjson setLatest "$set_latest" --arg setChannel "$set_channel" '
     .[0] as $base |
     .[1] as $incoming |
     $base
     | .latest = (if $setLatest or (.latest == null) then $incoming.latest else .latest end)
+    | .channels = (
+        if $setChannel != ""
+        then
+          (.channels // {})
+          | .[$setChannel] = ((.[$setChannel] // {}) + { tag: $incoming.latest })
+        else .channels
+        end
+      )
     | .releases = ((.releases // {}) + $incoming.releases)
     | .unsupported = ((.unsupported // {}) + ($incoming.unsupported // {}))
   ' "$versions_json" "$manifest_json" > "$next_versions"
