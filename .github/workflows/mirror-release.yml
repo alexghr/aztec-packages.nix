@@ -25,6 +25,9 @@ jobs:
   mirror:
     name: mirror release
     runs-on: ubuntu-latest
+    env:
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      CACHIX_CACHE_NAME: ${{ vars.CACHIX_CACHE_NAME || 'alexghr' }}
     steps:
       - name: check out repository
         uses: actions/checkout@v6
@@ -36,6 +39,20 @@ jobs:
         with:
           extra_nix_config: |
             experimental-features = nix-command flakes
+
+      - name: configure cachix
+        if: env.CACHIX_AUTH_TOKEN != ''
+        uses: cachix/cachix-action@v15
+        with:
+          authToken: ${{ env.CACHIX_AUTH_TOKEN }}
+          name: ${{ env.CACHIX_CACHE_NAME }}
+
+      - name: configure cachix pull only
+        if: env.CACHIX_AUTH_TOKEN == ''
+        uses: cachix/cachix-action@v15
+        with:
+          name: ${{ env.CACHIX_CACHE_NAME }}
+          skipPush: true
 
       - name: resolve upstream tag
         id: release
