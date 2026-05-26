@@ -136,7 +136,7 @@
           )
           // channelApps;
 
-        checks = lib.optionalAttrs hasDefault {
+        checks = lib.optionalAttrs (hasDefault && system == "x86_64-linux") {
           smoke = pkgs.runCommand "aztec-bin-smoke" {} ''
             ${pkgs.bash}/bin/bash ${./scripts/smoke-test.sh} ${config.packages.aztec-bin}
             touch $out
