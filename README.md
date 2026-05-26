@@ -3,89 +3,46 @@
 Unofficial binary Nix packaging for Aztec development tooling from
 [`AztecProtocol/aztec-packages`](https://github.com/AztecProtocol/aztec-packages).
 
-This flake packages prebuilt Aztec release artifacts. It does not build Aztec
-from source with Nix. Artifacts are fetched by pinned URL and verified by
-cryptographic hash, then patched or wrapped for NixOS compatibility where
-required.
-
-## Status
-
-Phase 1 proof of concept. The default channel is `v4-stable`, currently pinned
-to `v4.3.0`.
-
-Working on `x86_64-linux`:
-
-- `aztec --help`
-- `aztec-wallet --help`
-- `bb-avm --help`
-- `nargo --help`
-
-The default package also exposes prefixed tools matching upstream `aztec-up`
-behavior: `aztec-bb-cli`, `aztec-nargo`, `aztec-noir-profiler`,
-`aztec-forge`, `aztec-cast`, `aztec-anvil`, and `aztec-chisel`.
+This flake packages prebuilt Aztec release artifacts. 
 
 ## Usage
 
 ```bash
 nix run .#aztec -- --help
-nix run .#bb-avm -- --help
-nix develop
-```
-
-Build the aggregate package:
-
-```bash
-nix build .#aztec-bin
 ```
 
 Downstream projects can use the flake in a development shell:
 
 ```nix
 {
-  inputs.aztec-packages-nix.url = "github:your-user/aztec-packages.nix";
+  inputs.aztec-packages.url = "github:alexghr/aztec-packages.nix";
+  inputs.forge.url = "github:shazow/forge.nix";
 
-  outputs = { nixpkgs, aztec-packages-nix, ... }:
+  outputs = { nixpkgs, aztec-packages, forge }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
     in {
       devShells.${system}.default = pkgs.mkShell {
         packages = [
-          aztec-packages-nix.packages.${system}.aztec-bin
+          aztec-packages.packages.${system}.default
+          forge.packages.${system}.default
           pkgs.nodejs_24
-          pkgs.pnpm
+          pkgs.corepack
         ];
       };
     };
 }
 ```
 
-For JavaScript libraries, keep using npm or pnpm in the consuming project:
+For JavaScript libraries, keep using npm/pnpm/yarn in the consuming project:
 
 ```bash
-pnpm add @aztec/aztec @aztec/aztec.js
+yarn add @aztec/aztec@4.3.0 @aztec/aztec.js@4.3.0
 ```
 
 Nix provides the toolchain, CLIs, native binaries, and contract artifacts; it
 does not replace the normal package manager for application dependencies.
-
-## Outputs
-
-```text
-packages.${system}.aztec-bin
-packages.${system}.aztec-bb
-packages.${system}.aztec-contracts
-packages.${system}.aztec-node-runtime
-packages.${system}.aztec-noir
-packages.${system}.default
-
-apps.${system}.aztec
-apps.${system}.aztec-wallet
-apps.${system}.bb-avm
-apps.${system}.nargo
-
-devShells.${system}.default
-```
 
 Mirrored channels also get package and app aliases. The initial channels are:
 
@@ -94,128 +51,6 @@ v4-stable  -> latest stable v4 release
 v4-nightly -> latest v4 nightly release
 v5-nightly -> latest v5 nightly release
 ```
-
-Nix output names normalize channel dashes to underscores, for example
-`apps.${system}.v4-stable` and `packages.${system}.v4-stable`. Nightly channel
-outputs appear after their first release has been mirrored into `versions.json`.
-Adding a future channel, such as `v5-rc`, `v5-stable`, or `v6-nightly`, only
-requires adding a channel entry with a matching tag pattern to `versions.json`;
-the flake output aliases are generated from that manifest.
-
-## Release Inputs
-
-The `versions.json` manifest is the source of truth. For `v4.3.0` it pins:
-
-- Barretenberg tarballs from the Aztec GitHub release. For `v4.3.0`, this is
-  the upstream asset named `barretenberg-avm-amd64-linux.tar.gz`.
-- Foundry binaries from the `foundry-rs/foundry` release named by the upstream
-  installer `versions` file.
-- Noir binaries from the `noir-lang/noir` release named by the upstream
-  installer `versions` file.
-- Aztec CLI npm packages, with a per-release
-  `node-runtime/<tag>/package-lock.json` and fixed `npmDepsHash`.
-- Contract artifacts from `@aztec/noir-contracts.js`,
-  `@aztec/noir-test-contracts.js`, `@aztec/protocol-contracts`, and
-  `@aztec/l1-artifacts`.
-
-Newer Aztec tags may publish Barretenberg assets under
-`AztecProtocol/barretenberg`; the updater checks both repositories.
-
-## Release Updates
-
-Collect release metadata:
-
-```bash
-scripts/update-release.sh v4.3.0 --dry-run
-scripts/update-release.sh v4.3.0
-scripts/update-release.sh v4.4.0-nightly.20260525 --set-channel v4-nightly
-```
-
-After adding a release manually, regenerate the matching
-`node-runtime/<tag>/package-lock.json` and build once to replace the placeholder
-`npmDepsHash` reported by Nix.
-
-`scripts/mirror-release.sh` automates the full local mirror step:
-
-```bash
-scripts/mirror-release.sh --channel v4-stable v4.3.0
-scripts/mirror-release.sh --channel v4-nightly v4.4.0-nightly.20260525
-```
-
-It updates `versions.json`, the per-release Node runtime files, and the release
-`npmDepsHash`.
-
-`scripts/mirror-channels.sh` resolves channel patterns from `versions.json` and
-mirrors any channel that has moved upstream:
-
-```bash
-scripts/mirror-channels.sh
-scripts/mirror-channels.sh --channel v5-nightly
-scripts/mirror-channels.sh --tag v5.0.0-nightly.20260525
-scripts/mirror-channels.sh --channel v4-nightly --tag v4.4.0-nightly.20260525
-```
-
-## Release Mirror Automation
-
-`.github/workflows/mirror-release.yml` mirrors upstream Aztec releases into pull
-requests. It can be triggered manually with optional `channel` and `tag` inputs,
-by the daily cron, or by a `repository_dispatch` event of type
-`aztec-packages-release`.
-
-The dispatch payload may include `client_payload.channel` and either
-`client_payload.tag` or `client_payload.release.tag_name`. When `channel` is
-omitted, the workflow updates every configured channel whose pattern matches
-the tag:
-
-```json
-{
-  "event_type": "aztec-packages-release",
-  "client_payload": {
-    "tag": "v5.0.0-nightly.20260525"
-  }
-}
-```
-
-Scheduled runs poll the configured channel patterns from
-`AztecProtocol/aztec-packages` and skip channels whose current tag is already
-mirrored.
-
-The workflow uses Cachix cache `alexghr` by default. Override it with the
-repository variable `CACHIX_CACHE_NAME`. Set the repository secret
-`CACHIX_AUTH_TOKEN` to push build results; without it, the workflow configures
-Cachix in pull-only mode.
-
-## Smoke Testing
-
-After building or entering a dev shell:
-
-```bash
-scripts/smoke-test.sh
-scripts/smoke-test.sh ./result
-```
-
-By default it checks `aztec`, `bb-avm`, and `nargo`. Override the command list
-for partial packages:
-
-```bash
-SMOKE_COMMANDS="bb-avm" scripts/smoke-test.sh ./result
-```
-
-Networked tests, including `aztec start --local-network`, remain opt-in because
-they start Anvil and long-running services.
-
-## Artifact Inspection
-
-Inspect downloaded artifacts or unpacked directories with:
-
-```bash
-scripts/inspect-artifacts.sh ./result
-scripts/inspect-artifacts.sh ./downloads/barretenberg-avm-amd64-linux.tar.gz
-scripts/inspect-artifacts.sh https://github.com/AztecProtocol/aztec-packages/releases/download/v4.3.0/barretenberg-avm-amd64-linux.tar.gz
-```
-
-The inspector reports `file`, `ldd`, ELF interpreter, and rpath information
-where those tools are available.
 
 ## Known Limitations
 
