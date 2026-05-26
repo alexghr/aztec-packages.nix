@@ -96,6 +96,26 @@ set_npm_deps_hash() {
     '.releases[$tag].npmDepsHash = $hash'
 }
 
+clear_npm_deps_note() {
+  update_json_file "$versions_json" \
+    --arg tag "$tag" \
+    --arg note "Run npm install --package-lock-only in node-runtime and rebuild to update npmDepsHash for this release." \
+    '
+      .releases[$tag].notes.unconfirmed = (
+        (.releases[$tag].notes.unconfirmed // [])
+        | map(select(. != $note))
+      )
+      | if (.releases[$tag].notes.unconfirmed | length) == 0
+        then del(.releases[$tag].notes.unconfirmed)
+        else .
+        end
+      | if (.releases[$tag].notes | length) == 0
+        then del(.releases[$tag].notes)
+        else .
+        end
+    '
+}
+
 extract_got_hash() {
   local log_file=$1
 
@@ -135,10 +155,15 @@ npm install \
   --no-fund \
   --prefix "$node_runtime_dir"
 
+if git rev-parse --show-toplevel >/dev/null 2>&1; then
+  git add "$package_json" "$node_runtime_dir/package-lock.json"
+fi
+
 set_npm_deps_hash "$fake_hash"
 
 build_log="$tmp_dir/npm-deps-hash.log"
 if nix build -L --no-link "$build_attr" > "$build_log" 2>&1; then
+  clear_npm_deps_note
   echo "nix build succeeded with the existing npmDepsHash"
   exit 0
 fi
@@ -152,5 +177,6 @@ fi
 
 set_npm_deps_hash "$npm_deps_hash"
 nix build -L --no-link "$build_attr"
+clear_npm_deps_note
 
 echo "mirrored $tag"

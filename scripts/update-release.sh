@@ -380,11 +380,11 @@ fi
 
 if [ -f "$versions_json" ]; then
   next_versions="$tmp_dir/versions.next.json"
-  jq -s --argjson setLatest "$set_latest" --arg setChannel "$set_channel" '
+  jq -s --arg setLatest "$set_latest" --arg setChannel "$set_channel" '
     .[0] as $base |
     .[1] as $incoming |
     $base
-    | .latest = (if $setLatest or (.latest == null) then $incoming.latest else .latest end)
+    | .latest = (if ($setLatest == "1") or (.latest == null) then $incoming.latest else .latest end)
     | .channels = (
         if $setChannel != ""
         then
