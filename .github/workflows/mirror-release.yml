@@ -15,7 +15,7 @@ on:
     types:
       - aztec-packages-release
   schedule:
-    - cron: "17 5 * * *"
+    - cron: "12 12 * * *"
 
 permissions:
   contents: write

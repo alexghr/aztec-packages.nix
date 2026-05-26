@@ -8,12 +8,12 @@
     },
     "v4-nightly": {
       "description": "Latest Aztec v4 nightly release",
-      "pattern": "^v4\\.[0-9]+\\.0-nightly\\.[0-9]{8}([.-][0-9]+)?$",
+      "pattern": "^v4\\.[0-9]+\\.0-nightly",
       "tag": "v4.4.0-nightly.20260526"
     },
     "v5-nightly": {
       "description": "Latest Aztec v5 nightly release",
-      "pattern": "^v5\\.0\\.0-nightly\\.[0-9]{8}([.-][0-9]+)?$",
+      "pattern": "^v5\\.0\\.0-nightly",
       "tag": "v5.0.0-nightly.20260526"
     }
   },
