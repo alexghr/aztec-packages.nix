@@ -1,22 +1,13 @@
 {
   autoPatchelfHook,
-  bash,
   barretenberg,
   cacert,
   contracts,
-  coreutils,
-  foundry,
-  git,
-  gnugrep,
-  gnused,
-  jq,
   lib,
   makeWrapper,
-  netcat-openbsd,
   nodejs_24,
   noir,
   openssl,
-  perl,
   stdenv,
   tag,
   release,
@@ -25,20 +16,21 @@
   buildNpmPackage,
 }: let
   nodeRuntimePath = release.nodeRuntime.path or tag;
+  nativeArtifacts = lib.getAttr system {
+    x86_64-linux = {
+      bbJs = "amd64-linux";
+      leveldown = "linux-x64";
+    };
+    aarch64-linux = {
+      bbJs = "arm64-linux";
+      leveldown = "linux-arm64";
+    };
+  };
 
   runtimePath = lib.makeBinPath [
-    bash
     barretenberg
-    coreutils
-    foundry
-    git
-    gnugrep
-    gnused
-    jq
-    netcat-openbsd
     nodejs_24
     noir
-    perl
   ];
 
   wrapperFlags =
@@ -85,6 +77,18 @@ in
             mkdir -p $out/lib/aztec/node $out/bin
             cp -R node_modules package.json package-lock.json $out/lib/aztec/node/
             chmod -R u+w $out/lib/aztec/node
+            nodeModules=$out/lib/aztec/node/node_modules
+
+            keepOnly() {
+              dir=$1
+              keep=$2
+              if [ -d "$dir" ]; then
+                find "$dir" -mindepth 1 -maxdepth 1 -type d ! -name "$keep" -exec rm -rf {} +
+              fi
+            }
+
+            keepOnly "$nodeModules/@aztec/bb.js/build" "${nativeArtifacts.bbJs}"
+            keepOnly "$nodeModules/leveldown/prebuilds" "${nativeArtifacts.leveldown}"
             patchShebangs $out/lib/aztec/node/node_modules/.bin || true
             patchShebangs $out/lib/aztec/node/node_modules/@aztec || true
 
@@ -138,8 +142,6 @@ in
       platforms = [
         "x86_64-linux"
         "aarch64-linux"
-        "x86_64-darwin"
-        "aarch64-darwin"
       ];
       sourceProvenance = with lib.sourceTypes; [binaryNativeCode];
     };

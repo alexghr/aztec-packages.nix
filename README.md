@@ -3,7 +3,7 @@
 Unofficial binary Nix packaging for Aztec development tooling from
 [`AztecProtocol/aztec-packages`](https://github.com/AztecProtocol/aztec-packages).
 
-This flake packages prebuilt Aztec release artifacts. 
+This flake packages prebuilt Aztec release artifacts.
 
 ## Usage
 
@@ -16,9 +16,9 @@ Downstream projects can use the flake in a development shell:
 ```nix
 {
   inputs.aztec-packages.url = "github:alexghr/aztec-packages.nix";
-  inputs.forge.url = "github:shazow/forge.nix";
+  inputs.foundry.url = "github:shazow/foundry.nix";
 
-  outputs = { nixpkgs, aztec-packages, forge }:
+  outputs = { nixpkgs, aztec-packages, foundry }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
@@ -26,7 +26,7 @@ Downstream projects can use the flake in a development shell:
       devShells.${system}.default = pkgs.mkShell {
         packages = [
           aztec-packages.packages.${system}.default
-          forge.packages.${system}.default
+          foundry.packages.${system}.default
           pkgs.nodejs_24
           pkgs.corepack
         ];
@@ -34,6 +34,9 @@ Downstream projects can use the flake in a development shell:
     };
 }
 ```
+
+Local-network and contract workflows need `anvil` on `PATH`; provide Foundry
+from `github:shazow/foundry.nix` or another external source.
 
 For JavaScript libraries, keep using npm/pnpm/yarn in the consuming project:
 

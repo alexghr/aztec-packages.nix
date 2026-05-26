@@ -1,76 +1,52 @@
 {
   barretenberg,
   contracts,
-  coreutils,
-  foundry,
   lib,
-  makeWrapper,
   node-runtime,
   noir,
   stdenvNoCC,
   tag,
   release,
   system,
-}: let
-  nativePath = lib.makeBinPath [
-    barretenberg
-    coreutils
-    foundry
-    noir
-  ];
-in
-  stdenvNoCC.mkDerivation {
-    pname = "aztec-bin";
-    version = release.version or tag;
+}:
+stdenvNoCC.mkDerivation {
+  pname = "aztec-bin";
+  version = release.version or tag;
 
-    dontUnpack = true;
-    nativeBuildInputs = [makeWrapper];
+  dontUnpack = true;
 
-    installPhase = ''
-      runHook preInstall
+  installPhase = ''
+    runHook preInstall
 
-      mkdir -p $out/bin $out/share/aztec
-      ln -s ${contracts}/share/aztec/contracts $out/share/aztec/contracts
+    mkdir -p $out/bin $out/share/aztec
+    ln -s ${contracts}/share/aztec/contracts $out/share/aztec/contracts
 
-      for cmd in aztec aztec-wallet aztec-pxe aztec-txe aztec-validator-client aztec-blob-client aztec-bb-cli; do
-        if [ -x ${node-runtime}/bin/$cmd ]; then
-          ln -s ${node-runtime}/bin/$cmd $out/bin/$cmd
-        fi
-      done
-
-      makeWrapper ${barretenberg}/bin/bb-avm $out/bin/bb-avm \
-        --prefix PATH : ${nativePath}
-
-      makeWrapper ${noir}/bin/nargo $out/bin/nargo \
-        --prefix PATH : ${nativePath}
-      makeWrapper ${noir}/bin/nargo $out/bin/aztec-nargo \
-        --prefix PATH : ${nativePath}
-
-      if [ -x ${noir}/bin/noir-profiler ]; then
-        makeWrapper ${noir}/bin/noir-profiler $out/bin/aztec-noir-profiler \
-          --prefix PATH : ${nativePath}
+    for cmd in aztec aztec-wallet aztec-pxe aztec-txe aztec-validator-client aztec-blob-client aztec-bb-cli; do
+      if [ -x ${node-runtime}/bin/$cmd ]; then
+        ln -s ${node-runtime}/bin/$cmd $out/bin/$cmd
       fi
+    done
 
-      for cmd in forge cast anvil chisel; do
-        if [ -x ${foundry}/bin/$cmd ]; then
-          makeWrapper ${foundry}/bin/$cmd $out/bin/aztec-$cmd \
-            --prefix PATH : ${nativePath}
-        fi
-      done
+    ln -s ${barretenberg}/bin/bb-avm $out/bin/bb-avm
 
-      runHook postInstall
-    '';
+    ln -s ${noir}/bin/nargo $out/bin/nargo
+    ln -s ${noir}/bin/nargo $out/bin/aztec-nargo
 
-    meta = {
-      description = "Unofficial binary distribution of Aztec development tooling";
-      homepage = "https://github.com/AztecProtocol/aztec-packages";
-      mainProgram = "aztec";
-      platforms = [
-        "x86_64-linux"
-        "aarch64-linux"
-        "x86_64-darwin"
-        "aarch64-darwin"
-      ];
-      sourceProvenance = with lib.sourceTypes; [binaryNativeCode];
-    };
-  }
+    if [ -x ${noir}/bin/noir-profiler ]; then
+      ln -s ${noir}/bin/noir-profiler $out/bin/aztec-noir-profiler
+    fi
+
+    runHook postInstall
+  '';
+
+  meta = {
+    description = "Unofficial binary distribution of Aztec development tooling";
+    homepage = "https://github.com/AztecProtocol/aztec-packages";
+    mainProgram = "aztec";
+    platforms = [
+      "x86_64-linux"
+      "aarch64-linux"
+    ];
+    sourceProvenance = with lib.sourceTypes; [binaryNativeCode];
+  };
+}

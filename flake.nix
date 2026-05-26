@@ -15,8 +15,6 @@
       systems = [
         "x86_64-linux"
         "aarch64-linux"
-        "x86_64-darwin"
-        "aarch64-darwin"
       ];
 
       perSystem = {
@@ -49,10 +47,10 @@
             inherit tag release system;
           };
           node-runtime = pkgs.callPackage ./pkgs/node-runtime.nix {
-            inherit tag release system barretenberg noir contracts foundry;
+            inherit tag release system barretenberg noir contracts;
           };
           aztec-bin = pkgs.callPackage ./pkgs/aztec-bin.nix {
-            inherit tag release system barretenberg noir contracts foundry node-runtime;
+            inherit tag release system barretenberg noir contracts node-runtime;
           };
         in {
           inherit aztec-bin barretenberg contracts foundry node-runtime noir;
