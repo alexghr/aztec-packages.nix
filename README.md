@@ -64,9 +64,5 @@ v5-nightly -> latest v5 nightly release
 
 ## Known Limitations
 
-- `aztec start --local-network` is manually verified, but has not been promoted
-  into an automated check.
 - The Noir release tarball used here does not include a standalone `acvm`
   binary, so `ACVM_BINARY_PATH` is intentionally not set yet.
-- This is an unofficial binary distribution. Nix metadata marks native binary
-  packages with `sourceProvenance = [ binaryNativeCode ]`.

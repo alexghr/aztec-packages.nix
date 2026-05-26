@@ -1,0 +1,68 @@
+name: build aztec packages
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-aztec-packages-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: build ${{ matrix.system }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+          - system: x86_64-darwin
+            runner: macos-15-intel
+          - system: aarch64-darwin
+            runner: macos-15
+    env:
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      CACHIX_CACHE_NAME: ${{ vars.CACHIX_CACHE_NAME || 'alexghr' }}
+    steps:
+      - name: check out repository
+        uses: actions/checkout@v6
+
+      - name: install nix
+        uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: configure cachix
+        if: env.CACHIX_AUTH_TOKEN != ''
+        uses: cachix/cachix-action@v15
+        with:
+          authToken: ${{ env.CACHIX_AUTH_TOKEN }}
+          name: ${{ env.CACHIX_CACHE_NAME }}
+
+      - name: configure cachix pull only
+        if: env.CACHIX_AUTH_TOKEN == ''
+        uses: cachix/cachix-action@v15
+        with:
+          name: ${{ env.CACHIX_CACHE_NAME }}
+          skipPush: true
+
+      - name: check flake
+        run: nix flake check -L --system "${{ matrix.system }}"
+
+      - name: build channel packages
+        run: |
+          nix build -L --no-link --system "${{ matrix.system }}" \
+            .#v4-stable \
+            .#v4-nightly \
+            .#v5-nightly
