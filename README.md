@@ -87,9 +87,6 @@ apps.${system}.nargo
 devShells.${system}.default
 ```
 
-Versioned package names are also generated from `versions.json`, for example
-`aztec-bin-v4_3_0`.
-
 Mirrored channels also get package and app aliases. The initial channels are:
 
 ```text
@@ -99,7 +96,7 @@ v5-nightly -> latest v5 nightly release
 ```
 
 Nix output names normalize channel dashes to underscores, for example
-`aztec-bin-v4_stable` and `apps.${system}.aztec-v4_stable`. Nightly channel
+`apps.${system}.v4-stable` and `packages.${system}.v4-stable`. Nightly channel
 outputs appear after their first release has been mirrored into `versions.json`.
 Adding a future channel, such as `v5-rc`, `v5-stable`, or `v6-nightly`, only
 requires adding a channel entry with a matching tag pattern to `versions.json`;

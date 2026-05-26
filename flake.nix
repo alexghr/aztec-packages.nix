@@ -25,12 +25,6 @@
       }: let
         versions = builtins.fromJSON (builtins.readFile ./versions.json);
 
-        normalizeTag = tag:
-          lib.replaceStrings ["." "-" "+"] ["_" "_" "_"] tag;
-
-        normalizeChannel = channel:
-          lib.replaceStrings ["." "-" "+"] ["_" "_" "_"] channel;
-
         mkRelease = tag: release: let
           barretenberg = pkgs.callPackage ./pkgs/barretenberg-bin.nix {
             inherit tag release system;
@@ -72,45 +66,15 @@
           )
           (versions.channels or {});
 
-        versionedPackages =
-          lib.concatMapAttrs (
-            tag: packages: let
-              suffix = normalizeTag tag;
-            in {
-              "aztec-bin-${suffix}" = packages.aztec-bin;
-              "aztec-bb-${suffix}" = packages.barretenberg;
-              "aztec-contracts-${suffix}" = packages.contracts;
-              "aztec-foundry-${suffix}" = packages.foundry;
-              "aztec-node-runtime-${suffix}" = packages.node-runtime;
-              "aztec-noir-${suffix}" = packages.noir;
-            }
-          )
-          releases;
-
         channelPackages =
           lib.concatMapAttrs (
-            channel: metadata: let
-              suffix = normalizeChannel channel;
-              packages = releases.${metadata.tag};
-            in {
-              "aztec-bin-${suffix}" = packages.aztec-bin;
-              "aztec-bb-${suffix}" = packages.barretenberg;
-              "aztec-contracts-${suffix}" = packages.contracts;
-              "aztec-foundry-${suffix}" = packages.foundry;
-              "aztec-node-runtime-${suffix}" = packages.node-runtime;
-              "aztec-noir-${suffix}" = packages.noir;
-            }
+            channel: metadata: {"${channel}" = releases.${metadata.tag}.aztec-bin;}
           )
           mirroredChannels;
 
         channelApps =
           lib.concatMapAttrs (
-            channel: metadata: let
-              suffix = normalizeChannel channel;
-              packages = releases.${metadata.tag};
-            in {
-              "aztec-${suffix}" = mkApp "Run the Aztec CLI for ${channel}" "${packages.aztec-bin}/bin/aztec";
-            }
+            channel: metadata: {"${channel}" = mkApp "Run the Aztec CLI for ${channel}" "${releases.${metadata.tag}.aztec-bin}/bin/aztec";}
           )
           mirroredChannels;
 
@@ -141,7 +105,6 @@
             aztec-node-runtime = latest.node-runtime;
             aztec-noir = latest.noir;
           }
-          // versionedPackages
           // channelPackages;
 
         apps =
