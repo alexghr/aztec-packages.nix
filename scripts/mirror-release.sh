@@ -128,7 +128,7 @@ update_args=("$tag")
 if [ -n "$channel" ]; then
   update_args+=(--set-channel "$channel")
 fi
-if [ "$channel" = "stable-v4" ] || [ "${MIRROR_SET_LATEST:-0}" = "1" ]; then
+if [ "$channel" = "v4-stable" ] || [ "${MIRROR_SET_LATEST:-0}" = "1" ]; then
   update_args+=(--set-latest)
 fi
 

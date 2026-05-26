@@ -54,7 +54,7 @@
           inherit aztec-bin barretenberg contracts foundry node-runtime noir;
         };
 
-        defaultChannel = "stable-v4";
+        defaultChannel = "v4-stable";
         releases = lib.mapAttrs mkRelease versions.releases;
         defaultTag =
           if

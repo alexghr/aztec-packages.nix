@@ -10,7 +10,7 @@ required.
 
 ## Status
 
-Phase 1 proof of concept. The default channel is `stable-v4`, currently pinned
+Phase 1 proof of concept. The default channel is `v4-stable`, currently pinned
 to `v4.3.0`.
 
 Working on `x86_64-linux`:
@@ -93,14 +93,17 @@ Versioned package names are also generated from `versions.json`, for example
 Mirrored channels also get package and app aliases. The initial channels are:
 
 ```text
-stable-v4  -> latest stable v4 release
-nightly-v4 -> latest v4 nightly release
-nightly-v5 -> latest v5 nightly release
+v4-stable  -> latest stable v4 release
+v4-nightly -> latest v4 nightly release
+v5-nightly -> latest v5 nightly release
 ```
 
 Nix output names normalize channel dashes to underscores, for example
-`aztec-bin-stable_v4` and `apps.${system}.aztec-stable_v4`. Nightly channel
+`aztec-bin-v4_stable` and `apps.${system}.aztec-v4_stable`. Nightly channel
 outputs appear after their first release has been mirrored into `versions.json`.
+Adding a future channel, such as `v5-rc`, `v5-stable`, or `v6-nightly`, only
+requires adding a channel entry with a matching tag pattern to `versions.json`;
+the flake output aliases are generated from that manifest.
 
 ## Release Inputs
 
@@ -128,7 +131,7 @@ Collect release metadata:
 ```bash
 scripts/update-release.sh v4.3.0 --dry-run
 scripts/update-release.sh v4.3.0
-scripts/update-release.sh v4.4.0-nightly.20260525 --set-channel nightly-v4
+scripts/update-release.sh v4.4.0-nightly.20260525 --set-channel v4-nightly
 ```
 
 After adding a release manually, regenerate the matching
@@ -138,8 +141,8 @@ After adding a release manually, regenerate the matching
 `scripts/mirror-release.sh` automates the full local mirror step:
 
 ```bash
-scripts/mirror-release.sh --channel stable-v4 v4.3.0
-scripts/mirror-release.sh --channel nightly-v4 v4.4.0-nightly.20260525
+scripts/mirror-release.sh --channel v4-stable v4.3.0
+scripts/mirror-release.sh --channel v4-nightly v4.4.0-nightly.20260525
 ```
 
 It updates `versions.json`, the per-release Node runtime files, and the release
@@ -150,9 +153,9 @@ mirrors any channel that has moved upstream:
 
 ```bash
 scripts/mirror-channels.sh
-scripts/mirror-channels.sh --channel nightly-v5
+scripts/mirror-channels.sh --channel v5-nightly
 scripts/mirror-channels.sh --tag v5.0.0-nightly.20260525
-scripts/mirror-channels.sh --channel nightly-v4 --tag v4.4.0-nightly.20260525
+scripts/mirror-channels.sh --channel v4-nightly --tag v4.4.0-nightly.20260525
 ```
 
 ## Release Mirror Automation
