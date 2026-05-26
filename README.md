@@ -44,6 +44,16 @@ yarn add @aztec/aztec@4.3.0 @aztec/aztec.js@4.3.0
 Nix provides the toolchain, CLIs, native binaries, and contract artifacts; it
 does not replace the normal package manager for application dependencies.
 
+Current `@aztec/bb.js` releases bundle a Linux `bb` binary that does not run on
+NixOS. From a consuming project, after install:
+
+```bash
+aztec_pkg=$(nix build --no-link --print-out-paths github:alexghr/aztec-packages.nix#default)
+ln -sf "$aztec_pkg/bin/bb-avm" node_modules/@aztec/bb.js/build/amd64-linux/bb
+```
+
+Use the same flake channel as the Aztec packages in the project.
+
 Mirrored channels also get package and app aliases. The initial channels are:
 
 ```text
