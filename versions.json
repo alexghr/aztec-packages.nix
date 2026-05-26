@@ -37,15 +37,66 @@
             "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.3.0/barretenberg-avm-amd64-linux.tar.gz",
             "hash": "sha256-9qkjI+983/C4Esx0K6AUvExfJPYvGTyUXzJrYHvpPLs="
           },
-          "noir": {
-            "name": "noir-x86_64-unknown-linux-gnu.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-x86_64-unknown-linux-gnu.tar.gz",
-            "hash": "sha256-rRCflSRqRdK9sHkAv+yhc5Jcp6SjicLhH7Rx9zKazk0="
-          },
           "foundry": {
             "name": "foundry_v1.4.1_linux_amd64.tar.gz",
             "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_linux_amd64.tar.gz",
             "hash": "sha256-8bBE7pVEAoB8TdWl59KbIQ0k/TYzt/GZ0YTwNP+U2TQ="
+          },
+          "noir": {
+            "name": "noir-x86_64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-x86_64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-rRCflSRqRdK9sHkAv+yhc5Jcp6SjicLhH7Rx9zKazk0="
+          }
+        },
+        "aarch64-linux": {
+          "barretenberg": {
+            "name": "barretenberg-arm64-linux.tar.gz",
+            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.3.0/barretenberg-arm64-linux.tar.gz",
+            "hash": "sha256-w4rmAXNT377pR/18n5kywOFNQUnT2FDIyeX5vZ/UzCk="
+          },
+          "foundry": {
+            "name": "foundry_v1.4.1_linux_arm64.tar.gz",
+            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_linux_arm64.tar.gz",
+            "hash": "sha256-4BKKLoFo+YUhdd/cfu9b+72GSTHCMa0aQo0wNAYUYi4="
+          },
+          "noir": {
+            "name": "noir-aarch64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-aarch64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-qo3yUJHvjnLQgnI3inteoUseHeRCcSwtsYL8jcZg6CM="
+          }
+        },
+        "x86_64-darwin": {
+          "barretenberg": {
+            "name": "barretenberg-amd64-darwin.tar.gz",
+            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.3.0/barretenberg-amd64-darwin.tar.gz",
+            "hash": "sha256-b4jOkZdgwZcT3M68rcGsm+f6RjblJMLyZ4PXCsQPp10="
+          },
+          "foundry": {
+            "name": "foundry_v1.4.1_darwin_amd64.tar.gz",
+            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_darwin_amd64.tar.gz",
+            "hash": "sha256-xwKalMQroEvZjduRwdQbiIg3xXntE5Bsbh8+xtnrALY="
+          },
+          "noir": {
+            "name": "noir-x86_64-apple-darwin.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-x86_64-apple-darwin.tar.gz",
+            "hash": "sha256-9J6yw+Hp6LjstM/NktQ2GIlSXzW+Tza6LZuwQrs3uAw="
+          }
+        },
+        "aarch64-darwin": {
+          "barretenberg": {
+            "name": "barretenberg-arm64-darwin.tar.gz",
+            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.3.0/barretenberg-arm64-darwin.tar.gz",
+            "hash": "sha256-nYbUyWjREN8hvzcDkSd40GUyA6OOsI4jf/KX+op/Tfk="
+          },
+          "foundry": {
+            "name": "foundry_v1.4.1_darwin_arm64.tar.gz",
+            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_darwin_arm64.tar.gz",
+            "hash": "sha256-Mu7hezyfcNI9MUecutABslx9K3ubGWY6oRgzCr2VkzI="
+          },
+          "noir": {
+            "name": "noir-aarch64-apple-darwin.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-aarch64-apple-darwin.tar.gz",
+            "hash": "sha256-nSTp9s8w7mycBnGHceAMNK0Ve8n2swokwzZgB7wuzzk="
           }
         }
       },
@@ -95,7 +146,6 @@
       "notes": {
         "unconfirmed": [
           "The Noir release tarball does not include a standalone acvm binary, so ACVM_BINARY_PATH is intentionally not set yet.",
-          "aarch64-linux is not exposed because v4.3.0 does not have a production Barretenberg release asset for that system.",
           "The Node CLI runtime is generated from npm package metadata, not from a dedicated upstream runtime tarball."
         ]
       }
@@ -128,6 +178,57 @@
             "name": "noir-x86_64-unknown-linux-gnu.tar.gz",
             "url": "https://github.com/noir-lang/noir/releases/download/temp-serialization-tag/noir-x86_64-unknown-linux-gnu.tar.gz",
             "hash": "sha256-+VnrrvMapFo4bXdehvWEcDfdw1QYQeVmYi1MI92DmtI="
+          }
+        },
+        "aarch64-linux": {
+          "barretenberg": {
+            "name": "barretenberg-arm64-linux.tar.gz",
+            "url": "https://github.com/AztecProtocol/barretenberg/releases/download/v5.0.0-nightly.20260526/barretenberg-arm64-linux.tar.gz",
+            "hash": "sha256-gKEtBU3xMlS1LkUzy10ul8adt8bvYuoRGs8RM572oXI="
+          },
+          "foundry": {
+            "name": "foundry_v1.4.1_linux_arm64.tar.gz",
+            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_linux_arm64.tar.gz",
+            "hash": "sha256-4BKKLoFo+YUhdd/cfu9b+72GSTHCMa0aQo0wNAYUYi4="
+          },
+          "noir": {
+            "name": "noir-aarch64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/temp-serialization-tag/noir-aarch64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-p0by5/Qm+ryTxujAo03vxjto/15fQ5Ttv8SFDVFjtEc="
+          }
+        },
+        "x86_64-darwin": {
+          "barretenberg": {
+            "name": "barretenberg-amd64-darwin.tar.gz",
+            "url": "https://github.com/AztecProtocol/barretenberg/releases/download/v5.0.0-nightly.20260526/barretenberg-amd64-darwin.tar.gz",
+            "hash": "sha256-1ebH2ELPj3ea1HMff2J76J0cWvsh+Fa3o+PwiPdA4f8="
+          },
+          "foundry": {
+            "name": "foundry_v1.4.1_darwin_amd64.tar.gz",
+            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_darwin_amd64.tar.gz",
+            "hash": "sha256-xwKalMQroEvZjduRwdQbiIg3xXntE5Bsbh8+xtnrALY="
+          },
+          "noir": {
+            "name": "noir-x86_64-apple-darwin.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/temp-serialization-tag/noir-x86_64-apple-darwin.tar.gz",
+            "hash": "sha256-uNSFYNTPGJd3EBJU7k7/E1y1SvFiIwD9qPskPTIpzcE="
+          }
+        },
+        "aarch64-darwin": {
+          "barretenberg": {
+            "name": "barretenberg-arm64-darwin.tar.gz",
+            "url": "https://github.com/AztecProtocol/barretenberg/releases/download/v5.0.0-nightly.20260526/barretenberg-arm64-darwin.tar.gz",
+            "hash": "sha256-fR6+E6dMk5qKYhwSC9O49AEtoZ8+zKDiGwD9N8YZc1I="
+          },
+          "foundry": {
+            "name": "foundry_v1.4.1_darwin_arm64.tar.gz",
+            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_darwin_arm64.tar.gz",
+            "hash": "sha256-Mu7hezyfcNI9MUecutABslx9K3ubGWY6oRgzCr2VkzI="
+          },
+          "noir": {
+            "name": "noir-aarch64-apple-darwin.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/temp-serialization-tag/noir-aarch64-apple-darwin.tar.gz",
+            "hash": "sha256-C1c8ybTaY0erhkjEvybV3mvKTXtz1ActbNL0SQ7svvY="
           }
         }
       },
@@ -218,6 +319,57 @@
             "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-x86_64-unknown-linux-gnu.tar.gz",
             "hash": "sha256-rRCflSRqRdK9sHkAv+yhc5Jcp6SjicLhH7Rx9zKazk0="
           }
+        },
+        "aarch64-linux": {
+          "barretenberg": {
+            "name": "barretenberg-arm64-linux.tar.gz",
+            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.4.0-nightly.20260526/barretenberg-arm64-linux.tar.gz",
+            "hash": "sha256-K0lF3F4gd6ABeqHm5Mh5GcCua4QV+tTZVMi6ui3BGw8="
+          },
+          "foundry": {
+            "name": "foundry_v1.4.1_linux_arm64.tar.gz",
+            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_linux_arm64.tar.gz",
+            "hash": "sha256-4BKKLoFo+YUhdd/cfu9b+72GSTHCMa0aQo0wNAYUYi4="
+          },
+          "noir": {
+            "name": "noir-aarch64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-aarch64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-qo3yUJHvjnLQgnI3inteoUseHeRCcSwtsYL8jcZg6CM="
+          }
+        },
+        "x86_64-darwin": {
+          "barretenberg": {
+            "name": "barretenberg-amd64-darwin.tar.gz",
+            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.4.0-nightly.20260526/barretenberg-amd64-darwin.tar.gz",
+            "hash": "sha256-ZeLbBq0+ySF5hVPKgzrJAlQoMAPoarFVG0EYY99MsO4="
+          },
+          "foundry": {
+            "name": "foundry_v1.4.1_darwin_amd64.tar.gz",
+            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_darwin_amd64.tar.gz",
+            "hash": "sha256-xwKalMQroEvZjduRwdQbiIg3xXntE5Bsbh8+xtnrALY="
+          },
+          "noir": {
+            "name": "noir-x86_64-apple-darwin.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-x86_64-apple-darwin.tar.gz",
+            "hash": "sha256-9J6yw+Hp6LjstM/NktQ2GIlSXzW+Tza6LZuwQrs3uAw="
+          }
+        },
+        "aarch64-darwin": {
+          "barretenberg": {
+            "name": "barretenberg-arm64-darwin.tar.gz",
+            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.4.0-nightly.20260526/barretenberg-arm64-darwin.tar.gz",
+            "hash": "sha256-K9EsPJrDr2kgVaZ5VOghbsFT9eAwMgYyNXtj/POaM7Y="
+          },
+          "foundry": {
+            "name": "foundry_v1.4.1_darwin_arm64.tar.gz",
+            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_darwin_arm64.tar.gz",
+            "hash": "sha256-Mu7hezyfcNI9MUecutABslx9K3ubGWY6oRgzCr2VkzI="
+          },
+          "noir": {
+            "name": "noir-aarch64-apple-darwin.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-aarch64-apple-darwin.tar.gz",
+            "hash": "sha256-nSTp9s8w7mycBnGHceAMNK0Ve8n2swokwzZgB7wuzzk="
+          }
         }
       },
       "npm": {
@@ -277,18 +429,6 @@
           "Final installed contract artifact layout is intentionally conservative."
         ]
       }
-    }
-  },
-  "unsupported": {
-    "v5.0.0-nightly.20260526": {
-      "reasons": [
-        "missing GitHub release asset barretenberg-avm-arm64-linux.tar.gz"
-      ]
-    },
-    "v4.4.0-nightly.20260526": {
-      "reasons": [
-        "missing GitHub release asset barretenberg-avm-arm64-linux.tar.gz"
-      ]
     }
   }
 }

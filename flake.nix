@@ -14,6 +14,9 @@
     flake-parts.lib.mkFlake {inherit inputs;} {
       systems = [
         "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
       ];
 
       perSystem = {
@@ -24,6 +27,13 @@
         ...
       }: let
         versions = builtins.fromJSON (builtins.readFile ./versions.json);
+
+        releaseSupportsSystem = release:
+          release ? systems
+          && builtins.hasAttr system release.systems
+          && release.systems.${system} ? barretenberg
+          && release.systems.${system} ? foundry
+          && release.systems.${system} ? noir;
 
         mkRelease = tag: release: let
           barretenberg = pkgs.callPackage ./pkgs/barretenberg-bin.nix {
@@ -49,7 +59,8 @@
         };
 
         defaultChannel = "v4-stable";
-        releases = lib.mapAttrs mkRelease versions.releases;
+        supportedReleaseDefs = lib.filterAttrs (_: release: releaseSupportsSystem release) versions.releases;
+        releases = lib.mapAttrs mkRelease supportedReleaseDefs;
         defaultTag =
           if
             versions ? channels
@@ -57,7 +68,11 @@
             && versions.channels.${defaultChannel} ? tag
           then versions.channels.${defaultChannel}.tag
           else versions.latest;
-        latest = releases.${defaultTag};
+        hasDefault = builtins.hasAttr defaultTag releases;
+        latest =
+          if hasDefault
+          then releases.${defaultTag}
+          else null;
 
         mirroredChannels =
           lib.filterAttrs (
@@ -96,44 +111,55 @@
         };
 
         packages =
-          {
-            default = latest.aztec-bin;
-            aztec-bin = latest.aztec-bin;
-            aztec-bb = latest.barretenberg;
-            aztec-contracts = latest.contracts;
-            aztec-foundry = latest.foundry;
-            aztec-node-runtime = latest.node-runtime;
-            aztec-noir = latest.noir;
-          }
+          (
+            lib.optionalAttrs hasDefault {
+              default = latest.aztec-bin;
+              aztec-bin = latest.aztec-bin;
+              aztec-bb = latest.barretenberg;
+              aztec-contracts = latest.contracts;
+              aztec-foundry = latest.foundry;
+              aztec-node-runtime = latest.node-runtime;
+              aztec-noir = latest.noir;
+            }
+          )
           // channelPackages;
 
         apps =
-          {
-            default = config.apps.aztec;
-            aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
-            aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
-            "bb-avm" = mkApp "Run Barretenberg" "${config.packages.aztec-bin}/bin/bb-avm";
-            nargo = mkApp "Run Noir nargo" "${config.packages.aztec-bin}/bin/nargo";
-          }
+          (
+            lib.optionalAttrs hasDefault {
+              default = config.apps.aztec;
+              aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
+              aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
+              "bb-avm" = mkApp "Run Barretenberg" "${config.packages.aztec-bin}/bin/bb-avm";
+              nargo = mkApp "Run Noir nargo" "${config.packages.aztec-bin}/bin/nargo";
+            }
+          )
           // channelApps;
 
-        checks.smoke = pkgs.runCommand "aztec-bin-smoke" {} ''
-          ${pkgs.bash}/bin/bash ${./scripts/smoke-test.sh} ${config.packages.aztec-bin}
-          touch $out
-        '';
-
-        devShells.default = pkgs.mkShell {
-          packages = [
-            config.packages.aztec-bin
-            pkgs.git
-            pkgs.jq
-            pkgs.nodejs_24
-            pkgs.pnpm
-          ];
-
-          AZTEC_CONTRACTS_DIR = "${config.packages.aztec-bin}/share/aztec/contracts";
-          SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+        checks = lib.optionalAttrs hasDefault {
+          smoke = pkgs.runCommand "aztec-bin-smoke" {} ''
+            ${pkgs.bash}/bin/bash ${./scripts/smoke-test.sh} ${config.packages.aztec-bin}
+            touch $out
+          '';
         };
+
+        devShells.default = pkgs.mkShell ({
+            packages =
+              lib.optionals hasDefault [
+                config.packages.aztec-bin
+              ]
+              ++ [
+                pkgs.git
+                pkgs.jq
+                pkgs.nodejs_24
+                pkgs.pnpm
+              ];
+
+            SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+          }
+          // lib.optionalAttrs hasDefault {
+            AZTEC_CONTRACTS_DIR = "${config.packages.aztec-bin}/share/aztec/contracts";
+          });
       };
     };
 }

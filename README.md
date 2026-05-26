@@ -68,7 +68,5 @@ v5-nightly -> latest v5 nightly release
   into an automated check.
 - The Noir release tarball used here does not include a standalone `acvm`
   binary, so `ACVM_BINARY_PATH` is intentionally not set yet.
-- Only `x86_64-linux` is exposed for now; `v4.3.0` does not publish the
-  required arm64 Barretenberg tarball.
 - This is an unofficial binary distribution. Nix metadata marks native binary
   packages with `sourceProvenance = [ binaryNativeCode ]`.

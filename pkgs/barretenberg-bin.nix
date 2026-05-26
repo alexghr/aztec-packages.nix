@@ -20,11 +20,11 @@ in
 
     dontUnpack = true;
 
-    nativeBuildInputs = [
+    nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [
       autoPatchelfHook
     ];
 
-    buildInputs = [
+    buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
       openssl
       stdenv.cc.cc.lib
       zlib
@@ -55,7 +55,12 @@ in
       description = "Prebuilt Aztec Barretenberg binary";
       homepage = "https://github.com/AztecProtocol/aztec-packages";
       mainProgram = "bb-avm";
-      platforms = ["x86_64-linux"];
+      platforms = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
       sourceProvenance = with lib.sourceTypes; [binaryNativeCode];
     };
   }

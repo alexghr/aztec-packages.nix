@@ -61,18 +61,21 @@ in
     npmDepsHash = release.npmDepsHash;
     dontNpmBuild = true;
 
-    nativeBuildInputs = [
-      autoPatchelfHook
-      makeWrapper
-    ];
+    nativeBuildInputs =
+      lib.optionals stdenv.hostPlatform.isLinux [
+        autoPatchelfHook
+      ]
+      ++ [
+        makeWrapper
+      ];
 
-    buildInputs = [
+    buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
       openssl
       stdenv.cc.cc.lib
       zlib
     ];
 
-    autoPatchelfIgnoreMissingDeps = [
+    autoPatchelfIgnoreMissingDeps = lib.optionals stdenv.hostPlatform.isLinux [
       "libc.musl-x86_64.so.1"
     ];
 
@@ -132,7 +135,12 @@ in
     meta = {
       description = "Node runtime for Aztec CLI packages";
       homepage = "https://github.com/AztecProtocol/aztec-packages";
-      platforms = ["x86_64-linux"];
+      platforms = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
       sourceProvenance = with lib.sourceTypes; [binaryNativeCode];
     };
   }

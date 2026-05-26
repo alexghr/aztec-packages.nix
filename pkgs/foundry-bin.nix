@@ -20,11 +20,11 @@ in
 
     dontUnpack = true;
 
-    nativeBuildInputs = [
+    nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [
       autoPatchelfHook
     ];
 
-    buildInputs = [
+    buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
       openssl
       stdenv.cc.cc.lib
       zlib
@@ -47,6 +47,8 @@ in
       platforms = [
         "x86_64-linux"
         "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
       ];
       sourceProvenance = with lib.sourceTypes; [binaryNativeCode];
     };

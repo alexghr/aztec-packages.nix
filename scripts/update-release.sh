@@ -94,6 +94,7 @@ noir_release_json="$tmp_dir/noir-release.json"
 foundry_release_json="$tmp_dir/foundry-release.json"
 install_versions="$tmp_dir/install-versions"
 manifest_json="$tmp_dir/manifest.json"
+systems=(x86_64-linux aarch64-linux x86_64-darwin aarch64-darwin)
 
 if ! git ls-remote --exit-code --tags "https://github.com/$aztec_repo.git" "refs/tags/$tag" >/dev/null; then
   echo "upstream tag not found in $aztec_repo: $tag" >&2
@@ -222,6 +223,8 @@ system_asset_suffix() {
   case "$1" in
     x86_64-linux) echo "amd64-linux" ;;
     aarch64-linux) echo "arm64-linux" ;;
+    x86_64-darwin) echo "amd64-darwin" ;;
+    aarch64-darwin) echo "arm64-darwin" ;;
     *)
       echo "unsupported system: $1" >&2
       return 1
@@ -233,11 +236,38 @@ foundry_asset_suffix() {
   case "$1" in
     x86_64-linux) echo "linux_amd64" ;;
     aarch64-linux) echo "linux_arm64" ;;
+    x86_64-darwin) echo "darwin_amd64" ;;
+    aarch64-darwin) echo "darwin_arm64" ;;
     *)
       echo "unsupported system: $1" >&2
       return 1
       ;;
   esac
+}
+
+noir_asset_name() {
+  case "$1" in
+    x86_64-linux) echo "noir-x86_64-unknown-linux-gnu.tar.gz" ;;
+    aarch64-linux) echo "noir-aarch64-unknown-linux-gnu.tar.gz" ;;
+    x86_64-darwin) echo "noir-x86_64-apple-darwin.tar.gz" ;;
+    aarch64-darwin) echo "noir-aarch64-apple-darwin.tar.gz" ;;
+    *)
+      echo "unsupported system: $1" >&2
+      return 1
+      ;;
+  esac
+}
+
+system_has_asset() {
+  local system=$1
+  local key=$2
+
+  jq -e \
+    --arg tag "$tag" \
+    --arg system "$system" \
+    --arg key "$key" \
+    '.releases[$tag].systems[$system][$key] != null' \
+    "$manifest_json" >/dev/null
 }
 
 add_github_asset() {
@@ -320,9 +350,19 @@ add_npm_package() {
     }'
 }
 
-for system in x86_64-linux aarch64-linux; do
+add_barretenberg_asset() {
+  local system=$1
+  local suffix
+
   suffix=$(system_asset_suffix "$system")
-  add_github_asset "$system" barretenberg "barretenberg-avm-$suffix.tar.gz" 1
+  add_github_asset "$system" barretenberg "barretenberg-avm-$suffix.tar.gz" 0
+  if ! system_has_asset "$system" barretenberg; then
+    add_github_asset "$system" barretenberg "barretenberg-$suffix.tar.gz" 1
+  fi
+}
+
+for system in "${systems[@]}"; do
+  add_barretenberg_asset "$system"
 done
 
 if [ -n "$foundry_version" ]; then
@@ -331,7 +371,7 @@ if [ -n "$foundry_version" ]; then
     --output "$foundry_release_json" || add_unsupported_reason "missing Foundry release v$foundry_version"
 
   if [ -s "$foundry_release_json" ]; then
-    for system in x86_64-linux aarch64-linux; do
+    for system in "${systems[@]}"; do
       suffix=$(foundry_asset_suffix "$system")
       add_github_asset "$system" foundry "foundry_v${foundry_version}_${suffix}.tar.gz" 1
     done
@@ -346,8 +386,9 @@ if [ -n "$noir_version" ]; then
     --output "$noir_release_json" || add_unsupported_reason "missing Noir release $noir_version"
 
   if [ -s "$noir_release_json" ]; then
-    add_github_asset x86_64-linux noir "noir-x86_64-unknown-linux-gnu.tar.gz" 1
-    add_github_asset aarch64-linux noir "noir-aarch64-unknown-linux-gnu.tar.gz" 1
+    for system in "${systems[@]}"; do
+      add_github_asset "$system" noir "$(noir_asset_name "$system")" 1
+    done
   fi
 else
   add_unsupported_reason "missing Noir version in install versions file"
@@ -364,7 +405,7 @@ add_npm_package l1Artifacts "@aztec/l1-artifacts"
 
 replace_manifest \
   --arg tag "$tag" \
-  '.releases[$tag].systems |= with_entries(select(.value.barretenberg?))'
+  '.releases[$tag].systems |= with_entries(select(.value.barretenberg? and .value.foundry? and .value.noir?))'
 
 replace_manifest \
   --arg tag "$tag" \

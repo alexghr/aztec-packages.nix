@@ -65,7 +65,12 @@ in
       description = "Unofficial binary distribution of Aztec development tooling";
       homepage = "https://github.com/AztecProtocol/aztec-packages";
       mainProgram = "aztec";
-      platforms = ["x86_64-linux"];
+      platforms = [
+        "x86_64-linux"
+        "aarch64-linux"
+        "x86_64-darwin"
+        "aarch64-darwin"
+      ];
       sourceProvenance = with lib.sourceTypes; [binaryNativeCode];
     };
   }
