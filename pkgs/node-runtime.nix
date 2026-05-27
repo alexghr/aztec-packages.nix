@@ -126,12 +126,7 @@ in
 
             wrapAztec "$npmBin/aztec" aztec
             wrapAztec "$npmBin/aztec-wallet" aztec-wallet
-
-            for bin in pxe txe validator-client blob-client bb-cli; do
-              if [ -e "$npmBin/$bin" ]; then
-                wrapAztec "$npmBin/$bin" "aztec-$bin"
-              fi
-            done
+            wrapAztec "$npmBin/txe" aztec-txe
 
             runHook postInstall
     '';

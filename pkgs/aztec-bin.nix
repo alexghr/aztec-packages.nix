@@ -21,7 +21,7 @@ stdenvNoCC.mkDerivation {
     mkdir -p $out/bin $out/share/aztec
     ln -s ${contracts}/share/aztec/contracts $out/share/aztec/contracts
 
-    for cmd in aztec aztec-wallet aztec-pxe aztec-txe aztec-validator-client aztec-blob-client aztec-bb-cli; do
+    for cmd in aztec aztec-wallet aztec-txe; do
       if [ -x ${node-runtime}/bin/$cmd ]; then
         ln -s ${node-runtime}/bin/$cmd $out/bin/$cmd
       fi
