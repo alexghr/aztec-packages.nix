@@ -11,6 +11,19 @@ This flake packages prebuilt Aztec release artifacts.
 nix run .#aztec -- --help
 ```
 
+For a ready-to-use Aztec contract development environment:
+
+```bash
+nix develop github:alexghr/aztec-packages.nix
+```
+
+The default shell follows `v4-stable` and includes the Aztec CLI `nargo`,
+Foundry (`forge`, `cast`, `anvil`), Node.js 24, Corepack, and `jq`.
+Follow the official Aztec guide to develop contracts, compile with
+`nargo`/`aztec`, and test against the local network:
+
+https://docs.aztec.network/developers/getting_started_on_local_network
+
 Downstream projects can use the flake in a development shell:
 
 ```nix

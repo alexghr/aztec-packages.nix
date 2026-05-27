@@ -163,12 +163,12 @@
             packages =
               lib.optionals hasDefault [
                 config.packages.aztec-bin
+                config.packages.aztec-foundry
               ]
               ++ [
-                pkgs.git
+                pkgs.corepack
                 pkgs.jq
                 pkgs.nodejs_24
-                pkgs.pnpm
               ];
 
             SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
