@@ -100,6 +100,7 @@
               release = releases.${metadata.tag};
             in {
               "${channel}" = mkApp "Run the Aztec CLI for ${channel}" "${release.aztec-bin}/bin/aztec";
+              "${channel}-acvm" = mkApp "Run ACVM for ${channel}" "${release.aztec-bin}/bin/acvm";
               "${channel}-aztec" = mkApp "Run the Aztec CLI for ${channel}" "${release.aztec-bin}/bin/aztec";
               "${channel}-aztec-wallet" = mkApp "Run the Aztec wallet CLI for ${channel}" "${release.aztec-bin}/bin/aztec-wallet";
               "${channel}-bb" = mkApp "Run Barretenberg for ${channel}" "${release.barretenberg}/bin/bb";
@@ -142,6 +143,7 @@
           (
             lib.optionalAttrs hasDefault {
               default = config.apps.aztec;
+              acvm = mkApp "Run ACVM" "${config.packages.aztec-bin}/bin/acvm";
               aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
               aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
               bb = mkApp "Run Barretenberg" "${config.packages.aztec-bb}/bin/bb";

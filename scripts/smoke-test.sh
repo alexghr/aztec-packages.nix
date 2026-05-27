@@ -8,7 +8,7 @@ Usage: scripts/smoke-test.sh [package-output]
 If package-output is provided, its bin directory is prepended to PATH.
 Override the checked commands with SMOKE_COMMANDS, for example:
 
-  SMOKE_COMMANDS="aztec bb nargo" scripts/smoke-test.sh ./result
+  SMOKE_COMMANDS="acvm aztec bb nargo" scripts/smoke-test.sh ./result
 EOF
 }
 
@@ -36,7 +36,7 @@ if [ -n "$package_output" ]; then
   fi
 fi
 
-commands=${SMOKE_COMMANDS:-"aztec bb nargo"}
+commands=${SMOKE_COMMANDS:-"acvm aztec bb nargo"}
 
 run_help() {
   local command_name=$1

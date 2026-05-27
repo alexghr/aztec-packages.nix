@@ -64,8 +64,3 @@ v4-stable  -> latest stable v4 release
 v4-nightly -> latest v4 nightly release
 v5-nightly -> latest v5 nightly release
 ```
-
-## Known Limitations
-
-- The Noir release tarball used here does not include a standalone `acvm`
-  binary, so `ACVM_BINARY_PATH` is intentionally not set yet.

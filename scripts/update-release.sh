@@ -78,11 +78,9 @@ done
 
 aztec_repo="AztecProtocol/aztec-packages"
 barretenberg_repo="AztecProtocol/barretenberg"
-noir_repo="noir-lang/noir"
 foundry_repo="foundry-rs/foundry"
 aztec_repo_api="https://api.github.com/repos/$aztec_repo"
 barretenberg_repo_api="https://api.github.com/repos/$barretenberg_repo"
-noir_repo_api="https://api.github.com/repos/$noir_repo"
 foundry_repo_api="https://api.github.com/repos/$foundry_repo"
 version=${tag#v}
 tmp_dir=$(mktemp -d)
@@ -90,11 +88,11 @@ trap 'rm -rf "$tmp_dir"' EXIT
 
 aztec_release_json="$tmp_dir/aztec-release.json"
 barretenberg_release_json="$tmp_dir/barretenberg-release.json"
-noir_release_json="$tmp_dir/noir-release.json"
 foundry_release_json="$tmp_dir/foundry-release.json"
+aztec_checkout="$tmp_dir/aztec-checkout"
 install_versions="$tmp_dir/install-versions"
 manifest_json="$tmp_dir/manifest.json"
-systems=(x86_64-linux aarch64-linux x86_64-darwin aarch64-darwin)
+systems=(x86_64-linux aarch64-linux)
 
 if ! git ls-remote --exit-code --tags "https://github.com/$aztec_repo.git" "refs/tags/$tag" >/dev/null; then
   echo "upstream tag not found in $aztec_repo: $tag" >&2
@@ -112,6 +110,22 @@ curl --fail --location --silent --show-error \
 curl --fail --location --silent --show-error \
   "https://install.aztec-labs.com/$version/versions" \
   --output "$install_versions" || true
+
+git clone \
+  --filter=blob:none \
+  --depth 1 \
+  --branch "$tag" \
+  "https://github.com/$aztec_repo.git" \
+  "$aztec_checkout" >/dev/null
+
+git -C "$aztec_checkout" submodule update \
+  --init \
+  --depth 1 \
+  noir/noir-repo >/dev/null
+
+for ci3_source in "$aztec_checkout/ci3/source" "$aztec_checkout/ci3/source_bootstrap"; do
+  sed -i '/source .*source_redis/d' "$ci3_source"
+done
 
 release_url="https://github.com/$aztec_repo/releases/tag/$tag"
 if [ -s "$aztec_release_json" ]; then
@@ -156,7 +170,6 @@ jq -n \
         notes: {
           unconfirmed: [
             "Run npm install --package-lock-only in node-runtime and rebuild to update npmDepsHash for this release.",
-            "The Noir release tarball does not include a standalone acvm binary, so ACVM_BINARY_PATH is intentionally not set yet.",
             "Final installed contract artifact layout is intentionally conservative."
           ]
         }
@@ -203,7 +216,7 @@ asset_field() {
   local release_file
   local value
 
-  for release_file in "$aztec_release_json" "$barretenberg_release_json" "$noir_release_json" "$foundry_release_json"; do
+  for release_file in "$aztec_release_json" "$barretenberg_release_json" "$foundry_release_json"; do
     if [ ! -s "$release_file" ]; then
       continue
     fi
@@ -245,17 +258,35 @@ foundry_asset_suffix() {
   esac
 }
 
-noir_asset_name() {
+aztec_noir_platform_tag() {
   case "$1" in
-    x86_64-linux) echo "noir-x86_64-unknown-linux-gnu.tar.gz" ;;
-    aarch64-linux) echo "noir-aarch64-unknown-linux-gnu.tar.gz" ;;
-    x86_64-darwin) echo "noir-x86_64-apple-darwin.tar.gz" ;;
-    aarch64-darwin) echo "noir-aarch64-apple-darwin.tar.gz" ;;
+    x86_64-linux) echo "linux-gnu-x86_64" ;;
+    aarch64-linux) echo "linux-gnu-aarch64" ;;
     *)
       echo "unsupported system: $1" >&2
       return 1
       ;;
   esac
+}
+
+aztec_noir_cache_name() {
+  local system=$1
+  local platform
+  local cache_hash
+
+  platform=$(aztec_noir_platform_tag "$system")
+
+  cache_hash=$(
+    cd "$aztec_checkout/noir"
+    CI=1 \
+      CURRENT_VERSION="$version" \
+      REF_NAME="$tag" \
+      PLATFORM_TAG="$platform" \
+      USE_TEST_CACHE=0 \
+      ./bootstrap.sh hash
+  )
+
+  echo "noir-$cache_hash.tar.gz"
 }
 
 system_has_asset() {
@@ -361,8 +392,39 @@ add_barretenberg_asset() {
   fi
 }
 
+add_aztec_noir_cache_asset() {
+  local system=$1
+  local cache_name
+  local url
+  local hash
+
+  cache_name=$(aztec_noir_cache_name "$system")
+  url="https://build-cache.aztec-labs.com/$cache_name"
+
+  if ! hash=$(nix store prefetch-file --json "$url" | jq -r '.hash'); then
+    add_unsupported_reason "missing Aztec Noir cache artifact $cache_name"
+    return
+  fi
+
+  replace_manifest \
+    --arg tag "$tag" \
+    --arg system "$system" \
+    --arg name "$cache_name" \
+    --arg url "$url" \
+    --arg hash "$hash" \
+    '.releases[$tag].systems[$system].noir = {
+      name: $name,
+      url: $url,
+      hash: $hash
+    }'
+}
+
 for system in "${systems[@]}"; do
   add_barretenberg_asset "$system"
+done
+
+for system in "${systems[@]}"; do
+  add_aztec_noir_cache_asset "$system"
 done
 
 if [ -n "$foundry_version" ]; then
@@ -378,20 +440,6 @@ if [ -n "$foundry_version" ]; then
   fi
 else
   add_unsupported_reason "missing Foundry version in install versions file"
-fi
-
-if [ -n "$noir_version" ]; then
-  curl --fail --location --silent --show-error \
-    "$noir_repo_api/releases/tags/$noir_version" \
-    --output "$noir_release_json" || add_unsupported_reason "missing Noir release $noir_version"
-
-  if [ -s "$noir_release_json" ]; then
-    for system in "${systems[@]}"; do
-      add_github_asset "$system" noir "$(noir_asset_name "$system")" 1
-    done
-  fi
-else
-  add_unsupported_reason "missing Noir version in install versions file"
 fi
 
 add_npm_package aztec "@aztec/aztec"

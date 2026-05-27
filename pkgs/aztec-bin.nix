@@ -29,6 +29,7 @@ stdenvNoCC.mkDerivation {
 
     ln -s ${barretenberg}/bin/bb $out/bin/bb
 
+    ln -s ${noir}/bin/acvm $out/bin/acvm
     ln -s ${noir}/bin/nargo $out/bin/nargo
     ln -s ${noir}/bin/nargo $out/bin/aztec-nargo
 

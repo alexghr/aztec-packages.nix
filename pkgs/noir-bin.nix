@@ -39,8 +39,32 @@ in
       runHook preInstall
 
       mkdir -p $out/bin
-      tar -xzf ${src} -C $out/bin
-      chmod +x $out/bin/* || true
+      unpackDir=$(mktemp -d)
+      tar -xzf ${src} -C "$unpackDir"
+
+      installNoirBin() {
+        cmd=$1
+        for candidate in \
+          "$unpackDir/noir-repo/target/release/$cmd" \
+          "$unpackDir/$cmd"; do
+          if [ -x "$candidate" ]; then
+            install -Dm755 "$candidate" "$out/bin/$cmd"
+            return 0
+          fi
+        done
+      }
+
+      installNoirBin nargo
+      installNoirBin acvm
+      installNoirBin noir-profiler
+      installNoirBin noir-inspector
+
+      for required in nargo acvm; do
+        if [ ! -x "$out/bin/$required" ]; then
+          echo "Noir artifact did not contain required binary: $required" >&2
+          exit 1
+        fi
+      done
 
       if [ -x $out/bin/nargo ]; then
         makeWrapper $out/bin/nargo $out/bin/aztec-nargo
@@ -58,8 +82,8 @@ in
     '';
 
     meta = {
-      description = "Noir binaries used by Aztec";
-      homepage = "https://github.com/noir-lang/noir";
+      description = "Aztec forked Noir binaries";
+      homepage = "https://github.com/AztecProtocol/aztec-packages/tree/master/noir";
       mainProgram = "nargo";
       platforms = [
         "x86_64-linux"

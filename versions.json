@@ -43,9 +43,9 @@
             "hash": "sha256-8bBE7pVEAoB8TdWl59KbIQ0k/TYzt/GZ0YTwNP+U2TQ="
           },
           "noir": {
-            "name": "noir-x86_64-unknown-linux-gnu.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-x86_64-unknown-linux-gnu.tar.gz",
-            "hash": "sha256-rRCflSRqRdK9sHkAv+yhc5Jcp6SjicLhH7Rx9zKazk0="
+            "name": "noir-b786c534d2b9261d.tar.gz",
+            "url": "https://build-cache.aztec-labs.com/noir-b786c534d2b9261d.tar.gz",
+            "hash": "sha256-ukXNxRS3ZsYIyeyPlDzh7WC3oDV2Vm0zTh+2gd662Fg="
           }
         },
         "aarch64-linux": {
@@ -60,43 +60,9 @@
             "hash": "sha256-4BKKLoFo+YUhdd/cfu9b+72GSTHCMa0aQo0wNAYUYi4="
           },
           "noir": {
-            "name": "noir-aarch64-unknown-linux-gnu.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-aarch64-unknown-linux-gnu.tar.gz",
-            "hash": "sha256-qo3yUJHvjnLQgnI3inteoUseHeRCcSwtsYL8jcZg6CM="
-          }
-        },
-        "x86_64-darwin": {
-          "barretenberg": {
-            "name": "barretenberg-amd64-darwin.tar.gz",
-            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.3.0/barretenberg-amd64-darwin.tar.gz",
-            "hash": "sha256-b4jOkZdgwZcT3M68rcGsm+f6RjblJMLyZ4PXCsQPp10="
-          },
-          "foundry": {
-            "name": "foundry_v1.4.1_darwin_amd64.tar.gz",
-            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_darwin_amd64.tar.gz",
-            "hash": "sha256-xwKalMQroEvZjduRwdQbiIg3xXntE5Bsbh8+xtnrALY="
-          },
-          "noir": {
-            "name": "noir-x86_64-apple-darwin.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-x86_64-apple-darwin.tar.gz",
-            "hash": "sha256-9J6yw+Hp6LjstM/NktQ2GIlSXzW+Tza6LZuwQrs3uAw="
-          }
-        },
-        "aarch64-darwin": {
-          "barretenberg": {
-            "name": "barretenberg-arm64-darwin.tar.gz",
-            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.3.0/barretenberg-arm64-darwin.tar.gz",
-            "hash": "sha256-nYbUyWjREN8hvzcDkSd40GUyA6OOsI4jf/KX+op/Tfk="
-          },
-          "foundry": {
-            "name": "foundry_v1.4.1_darwin_arm64.tar.gz",
-            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_darwin_arm64.tar.gz",
-            "hash": "sha256-Mu7hezyfcNI9MUecutABslx9K3ubGWY6oRgzCr2VkzI="
-          },
-          "noir": {
-            "name": "noir-aarch64-apple-darwin.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-aarch64-apple-darwin.tar.gz",
-            "hash": "sha256-nSTp9s8w7mycBnGHceAMNK0Ve8n2swokwzZgB7wuzzk="
+            "name": "noir-1a6d5e0398c9fea0.tar.gz",
+            "url": "https://build-cache.aztec-labs.com/noir-1a6d5e0398c9fea0.tar.gz",
+            "hash": "sha256-DGYmWyK27KmJ6j1rNhnatYFiWk7Z3CHowJMDeQSn2FM="
           }
         }
       },
@@ -145,7 +111,6 @@
       "npmDepsHash": "sha256-U6VqbP5ek5FX0ZJTMj1l7FR+e41sm0+BtN0HfCF9OxQ=",
       "notes": {
         "unconfirmed": [
-          "The Noir release tarball does not include a standalone acvm binary, so ACVM_BINARY_PATH is intentionally not set yet.",
           "The Node CLI runtime is generated from npm package metadata, not from a dedicated upstream runtime tarball."
         ]
       }
@@ -175,9 +140,9 @@
             "hash": "sha256-8bBE7pVEAoB8TdWl59KbIQ0k/TYzt/GZ0YTwNP+U2TQ="
           },
           "noir": {
-            "name": "noir-x86_64-unknown-linux-gnu.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/temp-serialization-tag/noir-x86_64-unknown-linux-gnu.tar.gz",
-            "hash": "sha256-+VnrrvMapFo4bXdehvWEcDfdw1QYQeVmYi1MI92DmtI="
+            "name": "noir-cbd442bcec39a6cb.tar.gz",
+            "url": "https://build-cache.aztec-labs.com/noir-cbd442bcec39a6cb.tar.gz",
+            "hash": "sha256-UdtCNmEHcuhGOZ7zP+Jhp63sL043SXTdQhNks9NK6qA="
           }
         },
         "aarch64-linux": {
@@ -192,43 +157,9 @@
             "hash": "sha256-4BKKLoFo+YUhdd/cfu9b+72GSTHCMa0aQo0wNAYUYi4="
           },
           "noir": {
-            "name": "noir-aarch64-unknown-linux-gnu.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/temp-serialization-tag/noir-aarch64-unknown-linux-gnu.tar.gz",
-            "hash": "sha256-p0by5/Qm+ryTxujAo03vxjto/15fQ5Ttv8SFDVFjtEc="
-          }
-        },
-        "x86_64-darwin": {
-          "barretenberg": {
-            "name": "barretenberg-amd64-darwin.tar.gz",
-            "url": "https://github.com/AztecProtocol/barretenberg/releases/download/v5.0.0-nightly.20260526/barretenberg-amd64-darwin.tar.gz",
-            "hash": "sha256-1ebH2ELPj3ea1HMff2J76J0cWvsh+Fa3o+PwiPdA4f8="
-          },
-          "foundry": {
-            "name": "foundry_v1.4.1_darwin_amd64.tar.gz",
-            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_darwin_amd64.tar.gz",
-            "hash": "sha256-xwKalMQroEvZjduRwdQbiIg3xXntE5Bsbh8+xtnrALY="
-          },
-          "noir": {
-            "name": "noir-x86_64-apple-darwin.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/temp-serialization-tag/noir-x86_64-apple-darwin.tar.gz",
-            "hash": "sha256-uNSFYNTPGJd3EBJU7k7/E1y1SvFiIwD9qPskPTIpzcE="
-          }
-        },
-        "aarch64-darwin": {
-          "barretenberg": {
-            "name": "barretenberg-arm64-darwin.tar.gz",
-            "url": "https://github.com/AztecProtocol/barretenberg/releases/download/v5.0.0-nightly.20260526/barretenberg-arm64-darwin.tar.gz",
-            "hash": "sha256-fR6+E6dMk5qKYhwSC9O49AEtoZ8+zKDiGwD9N8YZc1I="
-          },
-          "foundry": {
-            "name": "foundry_v1.4.1_darwin_arm64.tar.gz",
-            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_darwin_arm64.tar.gz",
-            "hash": "sha256-Mu7hezyfcNI9MUecutABslx9K3ubGWY6oRgzCr2VkzI="
-          },
-          "noir": {
-            "name": "noir-aarch64-apple-darwin.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/temp-serialization-tag/noir-aarch64-apple-darwin.tar.gz",
-            "hash": "sha256-C1c8ybTaY0erhkjEvybV3mvKTXtz1ActbNL0SQ7svvY="
+            "name": "noir-5ea80dddfcb59448.tar.gz",
+            "url": "https://build-cache.aztec-labs.com/noir-5ea80dddfcb59448.tar.gz",
+            "hash": "sha256-lOvlzc49E96UcTChioPqs5uNBiTCFda+BpUHatd486E="
           }
         }
       },
@@ -285,7 +216,6 @@
       "npmDepsHash": "sha256-euWZvZkp9pSA2+NC1J+ad7E8t8MkYy8EYpIVumeLbFg=",
       "notes": {
         "unconfirmed": [
-          "The Noir release tarball does not include a standalone acvm binary, so ACVM_BINARY_PATH is intentionally not set yet.",
           "Final installed contract artifact layout is intentionally conservative."
         ]
       }
@@ -315,9 +245,9 @@
             "hash": "sha256-8bBE7pVEAoB8TdWl59KbIQ0k/TYzt/GZ0YTwNP+U2TQ="
           },
           "noir": {
-            "name": "noir-x86_64-unknown-linux-gnu.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-x86_64-unknown-linux-gnu.tar.gz",
-            "hash": "sha256-rRCflSRqRdK9sHkAv+yhc5Jcp6SjicLhH7Rx9zKazk0="
+            "name": "noir-b786c534d2b9261d.tar.gz",
+            "url": "https://build-cache.aztec-labs.com/noir-b786c534d2b9261d.tar.gz",
+            "hash": "sha256-ukXNxRS3ZsYIyeyPlDzh7WC3oDV2Vm0zTh+2gd662Fg="
           }
         },
         "aarch64-linux": {
@@ -332,43 +262,9 @@
             "hash": "sha256-4BKKLoFo+YUhdd/cfu9b+72GSTHCMa0aQo0wNAYUYi4="
           },
           "noir": {
-            "name": "noir-aarch64-unknown-linux-gnu.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-aarch64-unknown-linux-gnu.tar.gz",
-            "hash": "sha256-qo3yUJHvjnLQgnI3inteoUseHeRCcSwtsYL8jcZg6CM="
-          }
-        },
-        "x86_64-darwin": {
-          "barretenberg": {
-            "name": "barretenberg-amd64-darwin.tar.gz",
-            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.4.0-nightly.20260526/barretenberg-amd64-darwin.tar.gz",
-            "hash": "sha256-ZeLbBq0+ySF5hVPKgzrJAlQoMAPoarFVG0EYY99MsO4="
-          },
-          "foundry": {
-            "name": "foundry_v1.4.1_darwin_amd64.tar.gz",
-            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_darwin_amd64.tar.gz",
-            "hash": "sha256-xwKalMQroEvZjduRwdQbiIg3xXntE5Bsbh8+xtnrALY="
-          },
-          "noir": {
-            "name": "noir-x86_64-apple-darwin.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-x86_64-apple-darwin.tar.gz",
-            "hash": "sha256-9J6yw+Hp6LjstM/NktQ2GIlSXzW+Tza6LZuwQrs3uAw="
-          }
-        },
-        "aarch64-darwin": {
-          "barretenberg": {
-            "name": "barretenberg-arm64-darwin.tar.gz",
-            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.4.0-nightly.20260526/barretenberg-arm64-darwin.tar.gz",
-            "hash": "sha256-K9EsPJrDr2kgVaZ5VOghbsFT9eAwMgYyNXtj/POaM7Y="
-          },
-          "foundry": {
-            "name": "foundry_v1.4.1_darwin_arm64.tar.gz",
-            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.4.1/foundry_v1.4.1_darwin_arm64.tar.gz",
-            "hash": "sha256-Mu7hezyfcNI9MUecutABslx9K3ubGWY6oRgzCr2VkzI="
-          },
-          "noir": {
-            "name": "noir-aarch64-apple-darwin.tar.gz",
-            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-aarch64-apple-darwin.tar.gz",
-            "hash": "sha256-nSTp9s8w7mycBnGHceAMNK0Ve8n2swokwzZgB7wuzzk="
+            "name": "noir-1a6d5e0398c9fea0.tar.gz",
+            "url": "https://build-cache.aztec-labs.com/noir-1a6d5e0398c9fea0.tar.gz",
+            "hash": "sha256-DGYmWyK27KmJ6j1rNhnatYFiWk7Z3CHowJMDeQSn2FM="
           }
         }
       },
@@ -425,7 +321,6 @@
       "npmDepsHash": "sha256-ZG12l12q6y+LZXKvqaYgBnLQZvNre59k5cUTGzHEtSY=",
       "notes": {
         "unconfirmed": [
-          "The Noir release tarball does not include a standalone acvm binary, so ACVM_BINARY_PATH is intentionally not set yet.",
           "Final installed contract artifact layout is intentionally conservative."
         ]
       }

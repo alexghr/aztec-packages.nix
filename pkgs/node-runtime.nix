@@ -41,6 +41,7 @@
       "--set AZTEC_CONTRACTS_DIR ${contracts}/share/aztec/contracts"
       "--set BB ${barretenberg}/bin/bb"
       "--set BB_BINARY_PATH ${barretenberg}/bin/bb"
+      "--set ACVM_BINARY_PATH ${noir}/bin/acvm"
       "--run 'export BB_WORKING_DIRECTORY=\"\${BB_WORKING_DIRECTORY:-\${TMPDIR:-/tmp}/aztec-bb}\"'"
       "--run 'export ACVM_WORKING_DIRECTORY=\"\${ACVM_WORKING_DIRECTORY:-\${TMPDIR:-/tmp}/aztec-acvm}\"'"
     ];
