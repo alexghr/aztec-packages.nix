@@ -16,17 +16,16 @@ Downstream projects can use the flake in a development shell:
 ```nix
 {
   inputs.aztec-packages.url = "github:alexghr/aztec-packages.nix";
-  inputs.foundry.url = "github:shazow/foundry.nix";
 
-  outputs = { nixpkgs, aztec-packages, foundry }:
+  outputs = { nixpkgs, aztec-packages }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs { inherit system; };
     in {
       devShells.${system}.default = pkgs.mkShell {
         packages = [
-          aztec-packages.packages.${system}.default
-          foundry.packages.${system}.default
+          aztec-packages.packages.${system}.v4-stable
+          aztec-packages.packages.${system}.v4-stable-foundry
           pkgs.nodejs_24
           pkgs.corepack
         ];
@@ -35,27 +34,28 @@ Downstream projects can use the flake in a development shell:
 }
 ```
 
-Local-network and contract workflows need `anvil` on `PATH`; provide Foundry
-from `github:shazow/foundry.nix` or another external source.
+Or enter the same environment directly:
+
+```bash
+nix shell \
+  github:alexghr/aztec-packages.nix#v4-stable \
+  github:alexghr/aztec-packages.nix#v4-stable-foundry \
+  nixpkgs#{nodejs_24,corepack}
+
+# v4 projects using @aztec/bb.js need this until AztecProtocol/aztec-packages#23570 is merged
+ln -sfn "$(command -v bb)" node_modules/@aztec/bb.js/build/amd64-linux/bb
+
+# You now have a full Aztec contract development environment.
+# Follow the official Aztec guide to develop contracts, compile with nargo/aztec,
+# and test against the local network.
+aztec start --local-network
+```
 
 For JavaScript libraries, keep using npm/pnpm/yarn in the consuming project:
 
 ```bash
 yarn add @aztec/aztec@4.3.0 @aztec/aztec.js@4.3.0
 ```
-
-Nix provides the toolchain, CLIs, native binaries, and contract artifacts; it
-does not replace the normal package manager for application dependencies.
-
-Current `@aztec/bb.js` releases bundle a Linux `bb` binary that does not run on
-NixOS. From a consuming project, after install:
-
-```bash
-aztec_pkg=$(nix build --no-link --print-out-paths github:alexghr/aztec-packages.nix#default)
-ln -sf "$aztec_pkg/bin/bb" node_modules/@aztec/bb.js/build/amd64-linux/bb
-```
-
-Use the same flake channel as the Aztec packages in the project.
 
 Mirrored channels also get package and app aliases. The initial channels are:
 
