@@ -52,7 +52,7 @@ NixOS. From a consuming project, after install:
 
 ```bash
 aztec_pkg=$(nix build --no-link --print-out-paths github:alexghr/aztec-packages.nix#default)
-ln -sf "$aztec_pkg/bin/bb-avm" node_modules/@aztec/bb.js/build/amd64-linux/bb
+ln -sf "$aztec_pkg/bin/bb" node_modules/@aztec/bb.js/build/amd64-linux/bb
 ```
 
 Use the same flake channel as the Aztec packages in the project.

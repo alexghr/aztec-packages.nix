@@ -81,13 +81,30 @@
 
         channelPackages =
           lib.concatMapAttrs (
-            channel: metadata: {"${channel}" = releases.${metadata.tag}.aztec-bin;}
+            channel: metadata: let
+              release = releases.${metadata.tag};
+            in {
+              "${channel}" = release.aztec-bin;
+              "${channel}-aztec-bin" = release.aztec-bin;
+              "${channel}-bb" = release.barretenberg;
+              "${channel}-contracts" = release.contracts;
+              "${channel}-foundry" = release.foundry;
+              "${channel}-noir" = release.noir;
+            }
           )
           mirroredChannels;
 
         channelApps =
           lib.concatMapAttrs (
-            channel: metadata: {"${channel}" = mkApp "Run the Aztec CLI for ${channel}" "${releases.${metadata.tag}.aztec-bin}/bin/aztec";}
+            channel: metadata: let
+              release = releases.${metadata.tag};
+            in {
+              "${channel}" = mkApp "Run the Aztec CLI for ${channel}" "${release.aztec-bin}/bin/aztec";
+              "${channel}-aztec" = mkApp "Run the Aztec CLI for ${channel}" "${release.aztec-bin}/bin/aztec";
+              "${channel}-aztec-wallet" = mkApp "Run the Aztec wallet CLI for ${channel}" "${release.aztec-bin}/bin/aztec-wallet";
+              "${channel}-bb" = mkApp "Run Barretenberg for ${channel}" "${release.barretenberg}/bin/bb";
+              "${channel}-nargo" = mkApp "Run Noir nargo for ${channel}" "${release.noir}/bin/nargo";
+            }
           )
           mirroredChannels;
 
@@ -127,8 +144,8 @@
               default = config.apps.aztec;
               aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
               aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
-              "bb-avm" = mkApp "Run Barretenberg" "${config.packages.aztec-bin}/bin/bb-avm";
-              nargo = mkApp "Run Noir nargo" "${config.packages.aztec-bin}/bin/nargo";
+              bb = mkApp "Run Barretenberg" "${config.packages.aztec-bb}/bin/bb";
+              nargo = mkApp "Run Noir nargo" "${config.packages.aztec-noir}/bin/nargo";
             }
           )
           // channelApps;

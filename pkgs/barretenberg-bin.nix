@@ -37,16 +37,18 @@ in
       tar -xzf ${src} -C $out/bin
       chmod +x $out/bin/* || true
 
-      if [ ! -x $out/bin/bb-avm ] && [ -x $out/bin/bb ]; then
-        mv $out/bin/bb $out/bin/bb-avm
+      if [ ! -x $out/bin/bb ] && [ -x $out/bin/bb-avm ]; then
+        ln -s bb-avm $out/bin/bb
       fi
 
-      if [ ! -x $out/bin/bb-avm ]; then
+      if [ ! -x $out/bin/bb ]; then
         echo "barretenberg archive did not contain bb or bb-avm" >&2
         exit 1
       fi
 
-      rm -f $out/bin/bb
+      if [ ! -e $out/bin/bb-avm ]; then
+        ln -s bb $out/bin/bb-avm
+      fi
 
       runHook postInstall
     '';
@@ -54,7 +56,7 @@ in
     meta = {
       description = "Prebuilt Aztec Barretenberg binary";
       homepage = "https://github.com/AztecProtocol/aztec-packages";
-      mainProgram = "bb-avm";
+      mainProgram = "bb";
       platforms = [
         "x86_64-linux"
         "aarch64-linux"
