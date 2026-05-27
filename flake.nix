@@ -116,7 +116,6 @@
               aztec-bb = latest.barretenberg;
               aztec-contracts = latest.contracts;
               aztec-foundry = latest.foundry;
-              aztec-node-runtime = latest.node-runtime;
               aztec-noir = latest.noir;
             }
           )
