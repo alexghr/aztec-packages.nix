@@ -135,6 +135,7 @@ in
     meta = {
       description = "Node runtime for Aztec CLI packages";
       homepage = "https://github.com/AztecProtocol/aztec-packages";
+      license = lib.licenses.asl20;
       platforms = [
         "x86_64-linux"
         "aarch64-linux"

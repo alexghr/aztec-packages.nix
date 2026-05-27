@@ -56,6 +56,7 @@ in
     meta = {
       description = "Prebuilt Aztec Barretenberg binary";
       homepage = "https://github.com/AztecProtocol/aztec-packages";
+      license = lib.licenses.asl20;
       mainProgram = "bb";
       platforms = [
         "x86_64-linux"

@@ -43,6 +43,7 @@ stdenvNoCC.mkDerivation {
   meta = {
     description = "Unofficial binary distribution of Aztec development tooling";
     homepage = "https://github.com/AztecProtocol/aztec-packages";
+    license = lib.licenses.asl20;
     mainProgram = "aztec";
     platforms = [
       "x86_64-linux"

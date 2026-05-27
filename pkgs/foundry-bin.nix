@@ -43,6 +43,7 @@ in
     meta = {
       description = "Foundry binaries pinned to the Aztec release";
       homepage = "https://github.com/foundry-rs/foundry";
+      license = with lib.licenses; [mit asl20];
       mainProgram = "forge";
       platforms = [
         "x86_64-linux"

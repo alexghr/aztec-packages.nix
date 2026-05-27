@@ -84,6 +84,7 @@ in
     meta = {
       description = "Aztec forked Noir binaries";
       homepage = "https://github.com/AztecProtocol/aztec-packages/tree/master/noir";
+      license = lib.licenses.asl20;
       mainProgram = "nargo";
       platforms = [
         "x86_64-linux"
