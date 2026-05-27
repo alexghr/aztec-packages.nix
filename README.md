@@ -8,7 +8,7 @@ This flake packages prebuilt Aztec release artifacts.
 ## Usage
 
 ```bash
-nix run .#aztec -- --help
+nix run github:alexghr/aztec-packages.nix#aztec -- --help
 ```
 
 For a ready-to-use Aztec contract development environment:
