@@ -108,12 +108,7 @@
           "hash": "sha512-ObDO5ik3GX0rZH8Yb92AcIsnUNFqj9Qev0gWDhG3D/9+AtBy1dEcI1M2gMPZQj08uqOZsvdUqJh2Jds/duj9lw=="
         }
       },
-      "npmDepsHash": "sha256-U6VqbP5ek5FX0ZJTMj1l7FR+e41sm0+BtN0HfCF9OxQ=",
-      "notes": {
-        "unconfirmed": [
-          "The Node CLI runtime is generated from npm package metadata, not from a dedicated upstream runtime tarball."
-        ]
-      }
+      "npmDepsHash": "sha256-U6VqbP5ek5FX0ZJTMj1l7FR+e41sm0+BtN0HfCF9OxQ="
     },
     "v5.0.0-nightly.20260526": {
       "version": "5.0.0-nightly.20260526",
@@ -213,12 +208,7 @@
           "shasum": "f9e12d4ab91134ce3972f24f98f81b60f04b9aaf"
         }
       },
-      "npmDepsHash": "sha256-euWZvZkp9pSA2+NC1J+ad7E8t8MkYy8EYpIVumeLbFg=",
-      "notes": {
-        "unconfirmed": [
-          "Final installed contract artifact layout is intentionally conservative."
-        ]
-      }
+      "npmDepsHash": "sha256-euWZvZkp9pSA2+NC1J+ad7E8t8MkYy8EYpIVumeLbFg="
     },
     "v4.4.0-nightly.20260526": {
       "version": "4.4.0-nightly.20260526",
@@ -318,12 +308,7 @@
           "shasum": "86c8106b3e94b5aed4ccded9e783959965e09a61"
         }
       },
-      "npmDepsHash": "sha256-ZG12l12q6y+LZXKvqaYgBnLQZvNre59k5cUTGzHEtSY=",
-      "notes": {
-        "unconfirmed": [
-          "Final installed contract artifact layout is intentionally conservative."
-        ]
-      }
+      "npmDepsHash": "sha256-ZG12l12q6y+LZXKvqaYgBnLQZvNre59k5cUTGzHEtSY="
     }
   }
 }

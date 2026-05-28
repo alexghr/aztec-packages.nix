@@ -67,13 +67,10 @@ case "$tag" in
 esac
 
 version=${tag#v}
-attr_suffix=${tag//./_}
-attr_suffix=${attr_suffix//-/_}
-attr_suffix=${attr_suffix//+/_}
 node_runtime_dir="node-runtime/$tag"
 package_json="$node_runtime_dir/package.json"
 versions_json="versions.json"
-build_attr=${MIRROR_BUILD_ATTR:-.#aztec-node-runtime-$attr_suffix}
+build_attr=${MIRROR_BUILD_ATTR:-}
 fake_hash="sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
@@ -96,30 +93,21 @@ set_npm_deps_hash() {
     '.releases[$tag].npmDepsHash = $hash'
 }
 
-clear_npm_deps_note() {
-  update_json_file "$versions_json" \
-    --arg tag "$tag" \
-    --arg note "Run npm install --package-lock-only in node-runtime and rebuild to update npmDepsHash for this release." \
-    '
-      .releases[$tag].notes.unconfirmed = (
-        (.releases[$tag].notes.unconfirmed // [])
-        | map(select(. != $note))
-      )
-      | if (.releases[$tag].notes.unconfirmed | length) == 0
-        then del(.releases[$tag].notes.unconfirmed)
-        else .
-        end
-      | if (.releases[$tag].notes | length) == 0
-        then del(.releases[$tag].notes)
-        else .
-        end
-    '
-}
-
 extract_got_hash() {
   local log_file=$1
 
   sed -nE 's/^.*got:[[:space:]]*(sha256-[A-Za-z0-9+\/=]+).*$/\1/p' "$log_file" | tail -n 1
+}
+
+nix_build_node_runtime() {
+  if [ -n "$build_attr" ]; then
+    nix build -L --no-link "$build_attr"
+  else
+    nix build -L --no-link \
+      --file scripts/release-package.nix \
+      --argstr tag "$tag" \
+      --argstr package node-runtime
+  fi
 }
 
 mkdir -p "$node_runtime_dir"
@@ -162,8 +150,7 @@ fi
 set_npm_deps_hash "$fake_hash"
 
 build_log="$tmp_dir/npm-deps-hash.log"
-if nix build -L --no-link "$build_attr" > "$build_log" 2>&1; then
-  clear_npm_deps_note
+if nix_build_node_runtime > "$build_log" 2>&1; then
   echo "nix build succeeded with the existing npmDepsHash"
   exit 0
 fi
@@ -176,7 +163,6 @@ if [ -z "$npm_deps_hash" ]; then
 fi
 
 set_npm_deps_hash "$npm_deps_hash"
-nix build -L --no-link "$build_attr"
-clear_npm_deps_note
+nix_build_node_runtime
 
 echo "mirrored $tag"

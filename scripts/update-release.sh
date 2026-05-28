@@ -166,13 +166,7 @@ jq -n \
         },
         systems: {},
         npm: {},
-        npmDepsHash: "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
-        notes: {
-          unconfirmed: [
-            "Run npm install --package-lock-only in node-runtime and rebuild to update npmDepsHash for this release.",
-            "Final installed contract artifact layout is intentionally conservative."
-          ]
-        }
+        npmDepsHash: "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
       }
     },
     unsupported: {}

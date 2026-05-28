@@ -33,28 +33,10 @@
           && release.systems.${system} ? foundry
           && release.systems.${system} ? noir;
 
-        mkRelease = tag: release: let
-          barretenberg = pkgs.callPackage ./pkgs/barretenberg-bin.nix {
-            inherit tag release system;
+        mkRelease = tag: release:
+          import ./pkgs/release.nix {
+            inherit pkgs system tag release;
           };
-          noir = pkgs.callPackage ./pkgs/noir-bin.nix {
-            inherit tag release system;
-          };
-          foundry = pkgs.callPackage ./pkgs/foundry-bin.nix {
-            inherit tag release system;
-          };
-          contracts = pkgs.callPackage ./pkgs/contracts.nix {
-            inherit tag release system;
-          };
-          node-runtime = pkgs.callPackage ./pkgs/node-runtime.nix {
-            inherit tag release system barretenberg noir contracts;
-          };
-          aztec-bin = pkgs.callPackage ./pkgs/aztec-bin.nix {
-            inherit tag release system barretenberg noir contracts node-runtime;
-          };
-        in {
-          inherit aztec-bin barretenberg contracts foundry node-runtime noir;
-        };
 
         defaultChannel = "v4-stable";
         supportedReleaseDefs = lib.filterAttrs (_: release: releaseSupportsSystem release) versions.releases;
@@ -71,7 +53,6 @@
           if hasDefault
           then releases.${defaultTag}
           else null;
-
         mirroredChannels =
           lib.filterAttrs (
             _: channel:
@@ -176,6 +157,18 @@
           // lib.optionalAttrs hasDefault {
             AZTEC_CONTRACTS_DIR = "${config.packages.aztec-bin}/share/aztec/contracts";
           });
+
+        devShells.mirror = pkgs.mkShell {
+          packages = [
+            pkgs.coreutils
+            pkgs.curl
+            pkgs.git
+            pkgs.jq
+            pkgs.nodejs_24
+          ];
+
+          SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+        };
       };
     };
 }

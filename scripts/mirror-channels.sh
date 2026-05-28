@@ -100,12 +100,51 @@ mirror_tag() {
   local selected_channel=$1
   local selected_tag=$2
   local args=()
+  local previous_tag=""
 
   if [ -n "$selected_channel" ]; then
     args+=(--channel "$selected_channel")
+    previous_tag=$(jq -r --arg channel "$selected_channel" '.channels[$channel].tag // ""' "$versions_json")
   fi
 
   scripts/mirror-release.sh "${args[@]}" "$selected_tag"
+
+  if [ -n "$previous_tag" ] && [ "$previous_tag" != "$selected_tag" ]; then
+    remove_release "$previous_tag"
+  fi
+}
+
+remove_release() {
+  local release_tag=$1
+  local next_versions
+  local node_runtime_path
+
+  if [ -z "$release_tag" ] || ! jq -e --arg tag "$release_tag" '.releases[$tag] != null or .unsupported[$tag] != null' "$versions_json" >/dev/null; then
+    return
+  fi
+
+  node_runtime_path=$(jq -r --arg tag "$release_tag" '.releases[$tag].nodeRuntime.path // $tag' "$versions_json")
+  next_versions=$(mktemp)
+  jq --arg tag "$release_tag" '
+    del(.releases[$tag])
+    | if .unsupported? then del(.unsupported[$tag]) else . end
+    | if ((.unsupported // {}) | length) == 0
+      then del(.unsupported)
+      else .
+      end
+  ' "$versions_json" > "$next_versions"
+  mv "$next_versions" "$versions_json"
+
+  case "$node_runtime_path" in
+    ""|/*|*/*|*..*)
+      echo "skipping unsafe node-runtime path for $release_tag: $node_runtime_path" >&2
+      ;;
+    *)
+      rm -rf -- "node-runtime/$node_runtime_path"
+      ;;
+  esac
+
+  echo "removed previous release $release_tag"
 }
 
 if [ -n "$tag" ]; then
