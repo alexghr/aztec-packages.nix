@@ -59,6 +59,7 @@
               channel ? tag && builtins.hasAttr channel.tag releases
           )
           (versions.channels or {});
+        counterContractChannels = lib.filterAttrs (channel: _: channel == "v5-nightly") mirroredChannels;
 
         channelPackages =
           lib.concatMapAttrs (
@@ -82,6 +83,36 @@
             foundry = release.foundry;
           };
 
+        mkCounterContractE2E = channel: release:
+          pkgs.callPackage ./e2e/counter_contract {
+            name = "${channel}-counter-contract-e2e";
+            aztec-bin = release.aztec-bin;
+            foundry = release.foundry;
+          };
+
+        mkE2ESuite = name: tests:
+          pkgs.writeShellApplication {
+            inherit name;
+            text =
+              lib.concatMapStringsSep "\n"
+              (test: ''
+                echo
+                echo "running ${test.name}"
+                ${lib.getExe test}
+              '')
+              tests;
+          };
+
+        mkChannelE2E = channel: release:
+          mkE2ESuite "${channel}-e2e" (
+            [
+              (mkGettingStartedE2E channel release)
+            ]
+            ++ lib.optional
+            (builtins.hasAttr channel counterContractChannels)
+            (mkCounterContractE2E channel release)
+          );
+
         channelGettingStartedE2EPackages =
           lib.concatMapAttrs (
             channel: metadata: let
@@ -91,6 +122,28 @@
             }
           )
           mirroredChannels;
+
+        channelCounterContractE2EPackages =
+          lib.concatMapAttrs (
+            channel: metadata: let
+              release = releases.${metadata.tag};
+            in {
+              "${channel}-counter-contract-e2e" = mkCounterContractE2E channel release;
+            }
+          )
+          counterContractChannels;
+
+        channelE2EPackages =
+          lib.concatMapAttrs (
+            channel: metadata: let
+              release = releases.${metadata.tag};
+            in {
+              "${channel}-e2e" = mkChannelE2E channel release;
+            }
+          )
+          mirroredChannels;
+
+        allE2EPackage = mkE2ESuite "aztec-e2e" (lib.attrValues channelE2EPackages);
 
         channelApps =
           lib.concatMapAttrs (
@@ -121,6 +174,24 @@
               (lib.getExe package)
           )
           channelGettingStartedE2EPackages;
+
+        channelCounterContractE2EApps =
+          lib.mapAttrs (
+            packageName: package:
+              mkApp
+              "Run the Aztec counter contract local-network E2E for ${lib.removeSuffix "-counter-contract-e2e" packageName}"
+              (lib.getExe package)
+          )
+          channelCounterContractE2EPackages;
+
+        channelE2EApps =
+          lib.mapAttrs (
+            packageName: package:
+              mkApp
+              "Run the Aztec local-network E2E suite for ${lib.removeSuffix "-e2e" packageName}"
+              (lib.getExe package)
+          )
+          channelE2EPackages;
       in {
         formatter = pkgs.writeShellApplication {
           name = "alejandra-wrapper";
@@ -142,11 +213,14 @@
               aztec-contracts = latest.contracts;
               aztec-foundry = latest.foundry;
               aztec-noir = latest.noir;
+              e2e = allE2EPackage;
               getting-started-e2e = mkGettingStartedE2E defaultChannel latest;
             }
           )
           // channelPackages
-          // channelGettingStartedE2EPackages;
+          // channelGettingStartedE2EPackages
+          // channelCounterContractE2EPackages
+          // channelE2EPackages;
 
         apps =
           (
@@ -156,12 +230,15 @@
               aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
               aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
               bb = mkApp "Run Barretenberg" "${config.packages.aztec-bb}/bin/bb";
+              e2e = mkApp "Run all Aztec local-network E2E suites" (lib.getExe config.packages.e2e);
               getting-started-e2e = mkApp "Run the Aztec getting-started local-network E2E" (lib.getExe config.packages.getting-started-e2e);
               nargo = mkApp "Run Noir nargo" "${config.packages.aztec-noir}/bin/nargo";
             }
           )
           // channelApps
-          // channelGettingStartedE2EApps;
+          // channelGettingStartedE2EApps
+          // channelCounterContractE2EApps
+          // channelE2EApps;
 
         checks = lib.optionalAttrs (hasDefault && system == "x86_64-linux") {
           smoke = pkgs.runCommand "aztec-bin-smoke" {} ''

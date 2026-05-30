@@ -62,3 +62,7 @@ jobs:
             .#v4-stable \
             .#v4-nightly \
             .#v5-nightly
+
+      - name: run end-to-end tests
+        if: matrix.system == 'x86_64-linux'
+        run: AZTEC_READY_TIMEOUT=240 nix run -L --system "${{ matrix.system }}" .#e2e

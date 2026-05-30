@@ -106,6 +106,10 @@ jobs:
             .#v4-nightly \
             .#v5-nightly
 
+      - name: run end-to-end tests
+        if: steps.changes.outputs.changed == 'true'
+        run: AZTEC_READY_TIMEOUT=240 nix run -L --system x86_64-linux .#e2e
+
       - name: create mirror pull request
         if: steps.changes.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
