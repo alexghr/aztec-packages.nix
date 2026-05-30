@@ -75,6 +75,23 @@
           )
           mirroredChannels;
 
+        mkGettingStartedE2E = channel: release:
+          pkgs.callPackage ./e2e/getting_started {
+            name = "${channel}-getting-started-e2e";
+            aztec-bin = release.aztec-bin;
+            foundry = release.foundry;
+          };
+
+        channelGettingStartedE2EPackages =
+          lib.concatMapAttrs (
+            channel: metadata: let
+              release = releases.${metadata.tag};
+            in {
+              "${channel}-getting-started-e2e" = mkGettingStartedE2E channel release;
+            }
+          )
+          mirroredChannels;
+
         channelApps =
           lib.concatMapAttrs (
             channel: metadata: let
@@ -95,6 +112,15 @@
           inherit program;
           meta.description = description;
         };
+
+        channelGettingStartedE2EApps =
+          lib.mapAttrs (
+            packageName: package:
+              mkApp
+              "Run the Aztec getting-started local-network E2E for ${lib.removeSuffix "-getting-started-e2e" packageName}"
+              (lib.getExe package)
+          )
+          channelGettingStartedE2EPackages;
       in {
         formatter = pkgs.writeShellApplication {
           name = "alejandra-wrapper";
@@ -116,9 +142,11 @@
               aztec-contracts = latest.contracts;
               aztec-foundry = latest.foundry;
               aztec-noir = latest.noir;
+              getting-started-e2e = mkGettingStartedE2E defaultChannel latest;
             }
           )
-          // channelPackages;
+          // channelPackages
+          // channelGettingStartedE2EPackages;
 
         apps =
           (
@@ -128,10 +156,12 @@
               aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
               aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
               bb = mkApp "Run Barretenberg" "${config.packages.aztec-bb}/bin/bb";
+              getting-started-e2e = mkApp "Run the Aztec getting-started local-network E2E" (lib.getExe config.packages.getting-started-e2e);
               nargo = mkApp "Run Noir nargo" "${config.packages.aztec-noir}/bin/nargo";
             }
           )
-          // channelApps;
+          // channelApps
+          // channelGettingStartedE2EApps;
 
         checks = lib.optionalAttrs (hasDefault && system == "x86_64-linux") {
           smoke = pkgs.runCommand "aztec-bin-smoke" {} ''
