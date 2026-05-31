@@ -3,6 +3,7 @@
   cacert,
   contracts,
   foundry,
+  jq,
   lib,
   makeWrapper,
   node-runtime-unwrapped,
@@ -16,6 +17,7 @@
   runtimePath = lib.makeBinPath [
     barretenberg
     foundry
+    jq
     nodejs_24
     noir
   ];

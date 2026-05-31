@@ -52,6 +52,13 @@ in
           "cpSync(join(basePath, 'cache'), join(tempDir, 'cache'), copyOpts);" \
           "cpSync(join(basePath, 'cache'), join(tempDir, 'cache'), copyOpts); chmodSync(join(tempDir, 'cache'), 0o755); chmodSync(join(tempDir, 'cache', 'solidity-files-cache.json'), 0o644);"
 
+      # as above but for one of the helper scripts
+      # the env vars in this substitution reference vars from inside the script
+      substituteInPlace "$nodeModules/@aztec/aztec/scripts/add_crate.sh" \
+        --replace-fail \
+          'cp -r "$TEMPLATE_DIR/test" "$test_dir"' \
+          'cp -r "$TEMPLATE_DIR/test" "$test_dir"; chmod -R u+w "$contract_dir" "$test_dir"'
+
       patchShebangs $out/lib/aztec/node/node_modules/.bin || true
       patchShebangs $out/lib/aztec/node/node_modules/@aztec || true
 
