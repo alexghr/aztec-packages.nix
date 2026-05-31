@@ -151,8 +151,14 @@
               release = releases.${metadata.tag};
             in {
               "${channel}" = mkApp "Run the Aztec CLI for ${channel}" "${release.aztec-bin}/bin/aztec";
-              "${channel}-acvm" = mkApp "Run ACVM for ${channel}" "${release.aztec-bin}/bin/acvm";
+              "${channel}-acvm" = mkApp "Run ACVM for ${channel}" "${release.noir}/bin/acvm";
               "${channel}-aztec" = mkApp "Run the Aztec CLI for ${channel}" "${release.aztec-bin}/bin/aztec";
+              "${channel}-aztec-anvil" = mkApp "Run Aztec-bundled Anvil for ${channel}" "${release.aztec-bin}/bin/aztec-anvil";
+              "${channel}-aztec-bb" = mkApp "Run Aztec-bundled Barretenberg for ${channel}" "${release.aztec-bin}/bin/aztec-bb";
+              "${channel}-aztec-cast" = mkApp "Run Aztec-bundled Cast for ${channel}" "${release.aztec-bin}/bin/aztec-cast";
+              "${channel}-aztec-chisel" = mkApp "Run Aztec-bundled Chisel for ${channel}" "${release.aztec-bin}/bin/aztec-chisel";
+              "${channel}-aztec-forge" = mkApp "Run Aztec-bundled Forge for ${channel}" "${release.aztec-bin}/bin/aztec-forge";
+              "${channel}-aztec-nargo" = mkApp "Run Aztec-bundled Noir nargo for ${channel}" "${release.aztec-bin}/bin/aztec-nargo";
               "${channel}-aztec-wallet" = mkApp "Run the Aztec wallet CLI for ${channel}" "${release.aztec-bin}/bin/aztec-wallet";
               "${channel}-bb" = mkApp "Run Barretenberg for ${channel}" "${release.barretenberg}/bin/bb";
               "${channel}-nargo" = mkApp "Run Noir nargo for ${channel}" "${release.noir}/bin/nargo";
@@ -226,8 +232,14 @@
           (
             lib.optionalAttrs hasDefault {
               default = config.apps.aztec;
-              acvm = mkApp "Run ACVM" "${config.packages.aztec-bin}/bin/acvm";
+              acvm = mkApp "Run ACVM" "${config.packages.aztec-noir}/bin/acvm";
               aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
+              aztec-anvil = mkApp "Run Aztec-bundled Anvil" "${config.packages.aztec-bin}/bin/aztec-anvil";
+              aztec-bb = mkApp "Run Aztec-bundled Barretenberg" "${config.packages.aztec-bin}/bin/aztec-bb";
+              aztec-cast = mkApp "Run Aztec-bundled Cast" "${config.packages.aztec-bin}/bin/aztec-cast";
+              aztec-chisel = mkApp "Run Aztec-bundled Chisel" "${config.packages.aztec-bin}/bin/aztec-chisel";
+              aztec-forge = mkApp "Run Aztec-bundled Forge" "${config.packages.aztec-bin}/bin/aztec-forge";
+              aztec-nargo = mkApp "Run Aztec-bundled Noir nargo" "${config.packages.aztec-bin}/bin/aztec-nargo";
               aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
               bb = mkApp "Run Barretenberg" "${config.packages.aztec-bb}/bin/bb";
               e2e = mkApp "Run all Aztec local-network E2E suites" (lib.getExe config.packages.e2e);
@@ -251,7 +263,6 @@
             packages =
               lib.optionals hasDefault [
                 config.packages.aztec-bin
-                config.packages.aztec-foundry
               ]
               ++ [
                 pkgs.corepack

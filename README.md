@@ -17,10 +17,11 @@ For a ready-to-use Aztec contract development environment:
 nix develop github:alexghr/aztec-packages.nix
 ```
 
-The default shell follows `v4-stable` and includes the Aztec CLI `nargo`,
-Foundry (`forge`, `cast`, `anvil`), Node.js 24, Corepack, and `jq`.
+The default shell follows `v4-stable` and includes the Aztec CLI,
+Aztec-bundled native tools (`aztec-nargo`, `aztec-bb`, `aztec-forge`,
+`aztec-cast`, `aztec-anvil`, `aztec-chisel`), Node.js 24, Corepack, and `jq`.
 Follow the official Aztec guide to develop contracts, compile with
-`nargo`/`aztec`, and test against the local network:
+`aztec-nargo`/`aztec`, and test against the local network:
 
 https://docs.aztec.network/developers/getting_started_on_local_network
 
@@ -38,7 +39,6 @@ Downstream projects can use the flake in a development shell:
       devShells.${system}.default = pkgs.mkShell {
         packages = [
           aztec-packages.packages.${system}.v4-stable
-          aztec-packages.packages.${system}.v4-stable-foundry
           pkgs.nodejs_24
           pkgs.corepack
         ];
@@ -52,14 +52,13 @@ Or enter the same environment directly:
 ```bash
 nix shell \
   github:alexghr/aztec-packages.nix#v4-stable \
-  github:alexghr/aztec-packages.nix#v4-stable-foundry \
   nixpkgs#{nodejs_24,corepack}
 
 # v4 projects using @aztec/bb.js need this until AztecProtocol/aztec-packages#23570 is merged
-ln -sfn "$(command -v bb)" node_modules/@aztec/bb.js/build/amd64-linux/bb
+ln -sfn "$(command -v aztec-bb)" node_modules/@aztec/bb.js/build/amd64-linux/bb
 
 # You now have a full Aztec contract development environment.
-# Follow the official Aztec guide to develop contracts, compile with nargo/aztec,
+# Follow the official Aztec guide to develop contracts, compile with aztec-nargo/aztec,
 # and test against the local network.
 aztec start --local-network
 ```

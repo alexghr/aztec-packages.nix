@@ -1,34 +1,21 @@
 {
-  autoPatchelfHook,
   barretenberg,
   cacert,
   contracts,
+  foundry,
   lib,
   makeWrapper,
+  node-runtime-unwrapped,
   nodejs_24,
   noir,
-  openssl,
-  stdenv,
+  stdenvNoCC,
   tag,
   release,
   system,
-  zlib,
-  buildNpmPackage,
 }: let
-  nodeRuntimePath = release.nodeRuntime.path or tag;
-  nativeArtifacts = lib.getAttr system {
-    x86_64-linux = {
-      bbJs = "amd64-linux";
-      leveldown = "linux-x64";
-    };
-    aarch64-linux = {
-      bbJs = "arm64-linux";
-      leveldown = "linux-arm64";
-    };
-  };
-
   runtimePath = lib.makeBinPath [
     barretenberg
+    foundry
     nodejs_24
     noir
   ];
@@ -46,90 +33,36 @@
       "--run 'export ACVM_WORKING_DIRECTORY=\"\${ACVM_WORKING_DIRECTORY:-\${TMPDIR:-/tmp}/aztec-acvm}\"'"
     ];
 in
-  buildNpmPackage {
+  stdenvNoCC.mkDerivation {
     pname = "aztec-node-runtime";
     version = release.version or tag;
 
-    src = ../node-runtime + "/${nodeRuntimePath}";
-    npmDepsHash = release.npmDepsHash;
-    dontNpmBuild = true;
+    dontUnpack = true;
 
-    nativeBuildInputs =
-      lib.optionals stdenv.hostPlatform.isLinux [
-        autoPatchelfHook
-      ]
-      ++ [
-        makeWrapper
-      ];
-
-    buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
-      openssl
-      stdenv.cc.cc.lib
-      zlib
-    ];
-
-    autoPatchelfIgnoreMissingDeps = lib.optionals stdenv.hostPlatform.isLinux [
-      "libc.musl-x86_64.so.1"
+    nativeBuildInputs = [
+      makeWrapper
     ];
 
     installPhase = ''
-            runHook preInstall
+      runHook preInstall
 
-            mkdir -p $out/lib/aztec/node $out/bin
-            cp -R node_modules package.json package-lock.json $out/lib/aztec/node/
-            chmod -R u+w $out/lib/aztec/node
-            nodeModules=$out/lib/aztec/node/node_modules
+      mkdir -p $out/lib/aztec $out/bin
+      ln -s ${node-runtime-unwrapped}/lib/aztec/node $out/lib/aztec/node
 
-            keepOnly() {
-              dir=$1
-              keep=$2
-              if [ -d "$dir" ]; then
-                find "$dir" -mindepth 1 -maxdepth 1 -type d ! -name "$keep" -exec rm -rf {} +
-              fi
-            }
+      npmBin=${node-runtime-unwrapped}/lib/aztec/node/node_modules/.bin
 
-            keepOnly "$nodeModules/@aztec/bb.js/build" "${nativeArtifacts.bbJs}"
-            keepOnly "$nodeModules/leveldown/prebuilds" "${nativeArtifacts.leveldown}"
-            patchShebangs $out/lib/aztec/node/node_modules/.bin || true
-            patchShebangs $out/lib/aztec/node/node_modules/@aztec || true
+      wrapAztec() {
+        makeWrapper "$1" "$out/bin/$2" ${wrapperFlags}
+      }
 
-            deployJs=$out/lib/aztec/node/node_modules/@aztec/ethereum/dest/deploy_aztec_l1_contracts.js
-            substituteInPlace "$deployJs" \
-              --replace-fail \
-                "import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';" \
-                "import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'fs';"
-            substituteInPlace "$deployJs" \
-              --replace-fail \
-                "const JSON_DEPLOY_RESULT_PREFIX = 'JSON DEPLOY RESULT:';" \
-                "const JSON_DEPLOY_RESULT_PREFIX = 'JSON DEPLOY RESULT:';
-      function chmodWritableRecursive(path) {
-          const stat = statSync(path);
-          if (stat.isDirectory()) {
-              chmodSync(path, 0o700);
-              for (const entry of readdirSync(path)) {
-                  chmodWritableRecursive(join(path, entry));
-              }
-          } else {
-              chmodSync(path, stat.mode & 0o111 ? 0o700 : 0o600);
-          }
-      }"
-            substituteInPlace "$deployJs" \
-              --replace-fail \
-                "cpSync(join(basePath, 'foundry.lock'), join(tempDir, 'foundry.lock'));" \
-                "cpSync(join(basePath, 'foundry.lock'), join(tempDir, 'foundry.lock'));
-          chmodWritableRecursive(tempDir);"
+      wrapAztec "$npmBin/aztec" aztec
+      wrapAztec "$npmBin/aztec-wallet" aztec-wallet
 
-            npmBin=$out/lib/aztec/node/node_modules/.bin
+      for cmd in bb-cli blob-client noir-codegen txe; do
+        wrapAztec "$npmBin/$cmd" "aztec-$cmd"
+      done
 
-            wrapAztec() {
-              makeWrapper "$1" "$out/bin/$2" ${wrapperFlags}
-            }
-
-            wrapAztec "$npmBin/aztec" aztec
-            wrapAztec "$npmBin/aztec-wallet" aztec-wallet
-            wrapAztec "$npmBin/txe" aztec-txe
-
-            runHook postInstall
+      runHook postInstall
     '';
 
     meta = {
@@ -142,4 +75,5 @@ in
       ];
       sourceProvenance = with lib.sourceTypes; [binaryNativeCode];
     };
+    passthru.unwrapped = node-runtime-unwrapped;
   }
