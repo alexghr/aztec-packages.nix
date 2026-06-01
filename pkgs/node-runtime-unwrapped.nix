@@ -10,6 +10,21 @@
   buildNpmPackage,
 }: let
   nodeRuntimePath = release.nodeRuntime.path or tag;
+  platformDirs =
+    {
+      x86_64-linux = {
+        bbJs = "amd64-linux";
+        leveldown = "linux-x64";
+      };
+      aarch64-linux = {
+        bbJs = "arm64-linux";
+        leveldown = "linux-arm64";
+      };
+    }
+    .${
+      stdenv.hostPlatform.system
+    }
+    or (throw "aztec-node-runtime-unwrapped does not support ${stdenv.hostPlatform.system}");
 in
   buildNpmPackage {
     pname = "aztec-node-runtime-unwrapped";
@@ -40,6 +55,15 @@ in
       cp -R node_modules package.json package-lock.json $out/lib/aztec/node/
       chmod -R u+w $out/lib/aztec/node
       nodeModules=$out/lib/aztec/node/node_modules
+
+      # only keep native artifacts for the system we're currently building
+      find "$nodeModules/leveldown/prebuilds" -mindepth 1 -maxdepth 1 -type d \
+        ! -name ${lib.escapeShellArg platformDirs.leveldown} \
+        -exec rm -rf {} +
+
+      find "$nodeModules/@aztec/bb.js/build" -mindepth 1 -maxdepth 1 -type d \
+        ! -name ${lib.escapeShellArg platformDirs.bbJs} \
+        -exec rm -rf {} +
 
       # this script copies files from its package to a tmp dir and calls forge for deployments
       # in this case the files are copied from the nix store as read-only
