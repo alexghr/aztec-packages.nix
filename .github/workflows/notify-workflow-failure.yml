@@ -1,12 +1,15 @@
-name: notify mirror failure
+name: notify workflow failure
 
 on:
   workflow_dispatch:
   workflow_run:
     workflows:
+      - build aztec packages
       - mirror aztec release
     types:
       - completed
+    branches:
+      - main
 
 permissions: {}
 
@@ -26,7 +29,7 @@ jobs:
           HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
           REPOSITORY: ${{ github.repository }}
           RUN_URL: ${{ github.event.workflow_run.html_url || format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
-          WORKFLOW_NAME: ${{ github.event.workflow_run.name || 'notify mirror failure' }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name || 'notify workflow failure' }}
         run: |
           set -euo pipefail
 

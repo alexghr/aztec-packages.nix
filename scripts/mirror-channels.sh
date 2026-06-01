@@ -119,7 +119,7 @@ remove_release() {
   local next_versions
   local node_runtime_path
 
-  if [ -z "$release_tag" ] || ! jq -e --arg tag "$release_tag" '.releases[$tag] != null or .unsupported[$tag] != null' "$versions_json" >/dev/null; then
+  if [ -z "$release_tag" ] || ! jq -e --arg tag "$release_tag" '.releases[$tag] != null' "$versions_json" >/dev/null; then
     return
   fi
 
@@ -127,11 +127,6 @@ remove_release() {
   next_versions=$(mktemp)
   jq --arg tag "$release_tag" '
     del(.releases[$tag])
-    | if .unsupported? then del(.unsupported[$tag]) else . end
-    | if ((.unsupported // {}) | length) == 0
-      then del(.unsupported)
-      else .
-      end
   ' "$versions_json" > "$next_versions"
   mv "$next_versions" "$versions_json"
 

@@ -168,8 +168,7 @@ jq -n \
         npm: {},
         npmDepsHash: "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
       }
-    },
-    unsupported: {}
+    }
   }' > "$manifest_json"
 
 replace_manifest() {
@@ -178,13 +177,9 @@ replace_manifest() {
   mv "$next" "$manifest_json"
 }
 
-add_unsupported_reason() {
-  local reason=$1
-
-  replace_manifest \
-    --arg tag "$tag" \
-    --arg reason "$reason" \
-    '.unsupported[$tag].reasons = ((.unsupported[$tag].reasons // []) + [$reason])'
+die() {
+  echo "$*" >&2
+  exit 1
 }
 
 sri_from_digest() {
@@ -198,7 +193,7 @@ sri_from_digest() {
       return 1
       ;;
     *)
-      echo "unsupported GitHub asset digest format: $digest" >&2
+      echo "unrecognized GitHub asset digest format: $digest" >&2
       return 1
       ;;
   esac
@@ -233,7 +228,7 @@ system_asset_suffix() {
     x86_64-darwin) echo "amd64-darwin" ;;
     aarch64-darwin) echo "arm64-darwin" ;;
     *)
-      echo "unsupported system: $1" >&2
+      echo "unknown system: $1" >&2
       return 1
       ;;
   esac
@@ -246,7 +241,7 @@ foundry_asset_suffix() {
     x86_64-darwin) echo "darwin_amd64" ;;
     aarch64-darwin) echo "darwin_arm64" ;;
     *)
-      echo "unsupported system: $1" >&2
+      echo "unknown system: $1" >&2
       return 1
       ;;
   esac
@@ -257,7 +252,7 @@ aztec_noir_platform_tag() {
     x86_64-linux) echo "linux-gnu-x86_64" ;;
     aarch64-linux) echo "linux-gnu-aarch64" ;;
     *)
-      echo "unsupported system: $1" >&2
+      echo "unknown system: $1" >&2
       return 1
       ;;
   esac
@@ -309,7 +304,7 @@ add_github_asset() {
 
   if [ -z "$url" ]; then
     if [ "$required" = "1" ]; then
-      add_unsupported_reason "missing GitHub release asset $asset_name"
+      die "missing GitHub release asset $asset_name"
     fi
     return
   fi
@@ -347,8 +342,7 @@ add_npm_package() {
   metadata_url="https://registry.npmjs.org/$encoded/$version"
 
   if ! curl --fail --location --silent --show-error "$metadata_url" --output "$npm_json"; then
-    add_unsupported_reason "missing npm package $package@$version"
-    return
+    die "missing npm package $package@$version"
   fi
 
   tarball=$(jq -r '.dist.tarball // empty' "$npm_json")
@@ -356,8 +350,7 @@ add_npm_package() {
   shasum=$(jq -r '.dist.shasum // empty' "$npm_json")
 
   if [ -z "$tarball" ] || [ -z "$integrity" ]; then
-    add_unsupported_reason "npm package $package@$version is missing tarball or integrity metadata"
-    return
+    die "npm package $package@$version is missing tarball or integrity metadata"
   fi
 
   replace_manifest \
@@ -396,8 +389,7 @@ add_aztec_noir_cache_asset() {
   url="https://build-cache.aztec-labs.com/$cache_name"
 
   if ! hash=$(nix store prefetch-file --json "$url" | jq -r '.hash'); then
-    add_unsupported_reason "missing Aztec Noir cache artifact $cache_name"
-    return
+    die "missing Aztec Noir cache artifact $cache_name"
   fi
 
   replace_manifest \
@@ -424,7 +416,7 @@ done
 if [ -n "$foundry_version" ]; then
   curl --fail --location --silent --show-error \
     "$foundry_repo_api/releases/tags/v$foundry_version" \
-    --output "$foundry_release_json" || add_unsupported_reason "missing Foundry release v$foundry_version"
+    --output "$foundry_release_json" || die "missing Foundry release v$foundry_version"
 
   if [ -s "$foundry_release_json" ]; then
     for system in "${systems[@]}"; do
@@ -433,7 +425,7 @@ if [ -n "$foundry_version" ]; then
     done
   fi
 else
-  add_unsupported_reason "missing Foundry version in install versions file"
+  die "missing Foundry version in install versions file"
 fi
 
 add_npm_package aztec "@aztec/aztec"
@@ -445,16 +437,16 @@ add_npm_package noirTestContractsJs "@aztec/noir-test-contracts.js"
 add_npm_package protocolContracts "@aztec/protocol-contracts"
 add_npm_package l1Artifacts "@aztec/l1-artifacts"
 
-replace_manifest \
-  --arg tag "$tag" \
-  '.releases[$tag].systems |= with_entries(select(.value.barretenberg? and .value.foundry? and .value.noir?))'
-
-replace_manifest \
-  --arg tag "$tag" \
-  'if ((.unsupported[$tag].reasons // []) | length) == 0
-   then del(.unsupported[$tag])
-   else .
-   end'
+for system in "${systems[@]}"; do
+  if ! jq -e --arg tag "$tag" --arg system "$system" '
+    .releases[$tag].systems[$system].barretenberg?
+    and .releases[$tag].systems[$system].foundry?
+    and .releases[$tag].systems[$system].noir?
+  ' "$manifest_json" >/dev/null; then
+    echo "release $tag is incomplete for $system; refusing to update $versions_json" >&2
+    exit 1
+  fi
+done
 
 if [ "$dry_run" -eq 1 ]; then
   jq . "$manifest_json"
@@ -477,7 +469,6 @@ if [ -f "$versions_json" ]; then
         end
       )
     | .releases = ((.releases // {}) + $incoming.releases)
-    | .unsupported = ((.unsupported // {}) + ($incoming.unsupported // {}))
   ' "$versions_json" "$manifest_json" > "$next_versions"
   mv "$next_versions" "$versions_json"
 else
