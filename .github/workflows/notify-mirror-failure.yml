@@ -1,0 +1,54 @@
+name: notify mirror failure
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - mirror aztec release
+    types:
+      - completed
+
+permissions: {}
+
+jobs:
+  telegram:
+    name: notify Telegram
+    if: ${{ github.event_name == 'workflow_dispatch' || contains(fromJSON('["failure","timed_out"]'), github.event.workflow_run.conclusion) }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: send Telegram message
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ACTOR: ${{ github.event.workflow_run.actor.login || github.actor }}
+          BRANCH: ${{ github.event.workflow_run.head_branch || github.ref_name }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion || 'manual test' }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          REPOSITORY: ${{ github.repository }}
+          RUN_URL: ${{ github.event.workflow_run.html_url || format('{0}/{1}/actions/runs/{2}', github.server_url, github.repository, github.run_id) }}
+          WORKFLOW_NAME: ${{ github.event.workflow_run.name || 'notify mirror failure' }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
+            echo "::error::TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID secrets must be configured"
+            exit 1
+          fi
+
+          short_sha="${HEAD_SHA:0:12}"
+          message="$(cat <<EOF
+          GitHub Actions ${CONCLUSION}
+          Repository: ${REPOSITORY}
+          Workflow: ${WORKFLOW_NAME}
+          Branch: ${BRANCH}
+          Commit: ${short_sha}
+          Actor: ${ACTOR}
+          Run: ${RUN_URL}
+          EOF
+          )"
+
+          curl --fail --silent --show-error --request POST \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+            --data-urlencode "text=${message}" \
+            --data-urlencode "disable_web_page_preview=true"
