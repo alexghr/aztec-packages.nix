@@ -15,7 +15,7 @@ on:
     types:
       - aztec-packages-release
   schedule:
-    - cron: "12 12 * * *"
+    - cron: "12 8 * * *"
 
 permissions:
   contents: write
@@ -26,8 +26,10 @@ concurrency:
 
 jobs:
   mirror:
-    name: mirror release
-    runs-on: ubuntu-latest
+    name: prepare mirror update
+    runs-on: ubuntu-24.04
+    outputs:
+      changed: ${{ steps.changes.outputs.changed }}
     env:
       CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
       CACHIX_CACHE_NAME: ${{ vars.CACHIX_CACHE_NAME || 'alexghr' }}
@@ -84,7 +86,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          if git diff --quiet; then
+          if git diff --quiet HEAD -- versions.json node-runtime; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -94,24 +96,106 @@ jobs:
         if: steps.changes.outputs.changed == 'true'
         run: nix fmt
 
-      - name: check flake
+      - name: create mirror update patch
         if: steps.changes.outputs.changed == 'true'
-        run: nix flake check -L --system x86_64-linux
+        run: git diff --binary HEAD -- versions.json node-runtime > mirror-update.patch
+
+      - name: upload mirror update
+        if: steps.changes.outputs.changed == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: mirror-update
+          path: mirror-update.patch
+          if-no-files-found: error
+          retention-days: 1
+
+  validate:
+    name: validate ${{ matrix.system }}
+    needs: mirror
+    if: needs.mirror.outputs.changed == 'true'
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - system: x86_64-linux
+            runner: ubuntu-24.04
+          - system: aarch64-linux
+            runner: ubuntu-24.04-arm
+    env:
+      CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
+      CACHIX_CACHE_NAME: ${{ vars.CACHIX_CACHE_NAME || 'alexghr' }}
+    steps:
+      - name: check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: main
+
+      - name: download mirror update
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: mirror-update
+
+      - name: apply mirror update
+        run: git apply mirror-update.patch
+
+      - name: install nix
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: configure cachix
+        if: env.CACHIX_AUTH_TOKEN != ''
+        uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17.0.0
+        with:
+          authToken: ${{ env.CACHIX_AUTH_TOKEN }}
+          name: ${{ env.CACHIX_CACHE_NAME }}
+
+      - name: configure cachix pull only
+        if: env.CACHIX_AUTH_TOKEN == ''
+        uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17.0.0
+        with:
+          name: ${{ env.CACHIX_CACHE_NAME }}
+          skipPush: true
+
+      - name: check flake
+        run: nix flake check -L --system "${{ matrix.system }}"
 
       - name: build release packages
-        if: steps.changes.outputs.changed == 'true'
         run: |
-          nix build -L --no-link --system x86_64-linux \
+          nix build -L --no-link --system "${{ matrix.system }}" \
             .#v4-stable \
             .#v4-nightly \
             .#v5-nightly
 
       - name: run end-to-end tests
-        if: steps.changes.outputs.changed == 'true'
-        run: AZTEC_READY_TIMEOUT=240 nix run -L --system x86_64-linux .#e2e
+        if: matrix.system == 'x86_64-linux'
+        run: AZTEC_READY_TIMEOUT=240 nix run -L --system "${{ matrix.system }}" .#e2e
+
+  commit:
+    name: commit and push mirror update
+    needs:
+      - mirror
+      - validate
+    if: needs.mirror.outputs.changed == 'true'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: download mirror update
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: mirror-update
+
+      - name: apply mirror update
+        run: git apply mirror-update.patch
 
       - name: commit and push mirror update
-        if: steps.changes.outputs.changed == 'true'
         run: |
           set -euo pipefail
 
@@ -119,5 +203,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           git add versions.json node-runtime
+          if git diff --cached --quiet; then
+            echo "no mirror update to commit"
+            exit 0
+          fi
+
           git commit -m "chore: mirror aztec release channels"
           git push origin HEAD:main
