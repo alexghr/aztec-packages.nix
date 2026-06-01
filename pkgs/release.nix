@@ -16,12 +16,15 @@
   contracts = pkgs.callPackage ./contracts.nix {
     inherit tag release system;
   };
+  node-runtime-unwrapped = pkgs.callPackage ./node-runtime-unwrapped.nix {
+    inherit tag release system;
+  };
   node-runtime = pkgs.callPackage ./node-runtime.nix {
-    inherit tag release system barretenberg noir contracts;
+    inherit tag release system barretenberg noir contracts foundry node-runtime-unwrapped;
   };
   aztec-bin = pkgs.callPackage ./aztec-bin.nix {
-    inherit tag release system barretenberg noir contracts node-runtime;
+    inherit tag release system barretenberg noir contracts foundry node-runtime;
   };
 in {
-  inherit aztec-bin barretenberg contracts foundry node-runtime noir;
+  inherit aztec-bin barretenberg contracts foundry node-runtime node-runtime-unwrapped noir;
 }

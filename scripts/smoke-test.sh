@@ -8,7 +8,7 @@ Usage: scripts/smoke-test.sh [package-output]
 If package-output is provided, its bin directory is prepended to PATH.
 Override the checked commands with SMOKE_COMMANDS, for example:
 
-  SMOKE_COMMANDS="acvm aztec bb nargo" scripts/smoke-test.sh ./result
+  SMOKE_COMMANDS="aztec aztec-wallet aztec-bb aztec-nargo" scripts/smoke-test.sh ./result
 EOF
 }
 
@@ -36,7 +36,7 @@ if [ -n "$package_output" ]; then
   fi
 fi
 
-commands=${SMOKE_COMMANDS:-"acvm aztec bb nargo"}
+commands=${SMOKE_COMMANDS:-"aztec aztec-wallet aztec-bb aztec-nargo aztec-forge aztec-cast aztec-anvil aztec-chisel"}
 
 run_help() {
   local command_name=$1
@@ -67,8 +67,8 @@ if [ "${SMOKE_LOCAL_NETWORK:-0}" = "1" ]; then
     echo "SMOKE_LOCAL_NETWORK=1 requires timeout" >&2
     exit 1
   fi
-  if ! command -v anvil >/dev/null 2>&1; then
-    echo "SMOKE_LOCAL_NETWORK=1 requires anvil" >&2
+  if ! command -v aztec-anvil >/dev/null 2>&1; then
+    echo "SMOKE_LOCAL_NETWORK=1 requires aztec-anvil" >&2
     exit 1
   fi
 
