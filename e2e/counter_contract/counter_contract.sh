@@ -29,6 +29,7 @@ mkdir -p "$AZTEC_LOCALNET_DATA" "$AZTEC_WALLET_DATA"
 cleanup() {
   if [ -n "${AZTEC_LOCALNET_PID:-}" ]; then
     kill -- "-$AZTEC_LOCALNET_PID" 2>/dev/null || true
+    wait "$AZTEC_LOCALNET_PID" 2>/dev/null || true
   fi
   chmod -R u+w "$AZTEC_WORKING_DIR" 2>/dev/null || true
   rm -rf "$AZTEC_WORKING_DIR"
