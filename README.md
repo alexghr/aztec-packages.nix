@@ -75,4 +75,5 @@ Mirrored channels also get package and app aliases. The initial channels are:
 v4-stable  -> latest stable v4 release
 v4-nightly -> latest v4 nightly release
 v5-nightly -> latest v5 nightly release
+v6-nightly -> latest v6 nightly release
 ```
