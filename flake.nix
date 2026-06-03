@@ -33,6 +33,11 @@
           && release.systems.${system} ? foundry
           && release.systems.${system} ? noir;
 
+        bbJsPlatform = {
+          x86_64-linux = "amd64-linux";
+          aarch64-linux = "arm64-linux";
+        };
+
         mkRelease = tag: release:
           import ./pkgs/release.nix {
             inherit pkgs system tag release;
@@ -172,6 +177,49 @@
           meta.description = description;
         };
 
+        mkDevShell = channel: release: let
+          isV4Channel = lib.hasPrefix "v4-" channel;
+        in
+          pkgs.mkShell {
+            packages = [
+              release.aztec-bin
+              pkgs.corepack
+              pkgs.jq
+              pkgs.nodejs_24
+            ];
+
+            SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+            AZTEC_CONTRACTS_DIR = "${release.aztec-bin}/share/aztec/contracts";
+            BB = "${release.barretenberg}/bin/bb";
+            BB_BINARY_PATH = "${release.barretenberg}/bin/bb";
+            ACVM_BINARY_PATH = "${release.noir}/bin/acvm";
+
+            shellHook =
+              ''
+                export BB_WORKING_DIRECTORY="''${BB_WORKING_DIRECTORY:-''${TMPDIR:-/tmp}/aztec-bb}"
+                export ACVM_WORKING_DIRECTORY="''${ACVM_WORKING_DIRECTORY:-''${TMPDIR:-/tmp}/aztec-acvm}"
+              ''
+              # on v4 we need to patch bb.js since it does not read BB_BINARY_PATH
+              + lib.optionalString isV4Channel ''
+                aztec_link_bb() {
+                  local bb_js_dir="node_modules/@aztec/bb.js/build/${bbJsPlatform.${system}}"
+
+                  if [ -d "$bb_js_dir" ]; then
+                    ln -sfn "${release.barretenberg}/bin/bb" "$bb_js_dir/bb"
+                  fi
+                }
+
+                aztec_link_bb
+              '';
+          };
+
+        channelDevShells =
+          lib.mapAttrs (
+            channel: metadata:
+              mkDevShell channel releases.${metadata.tag}
+          )
+          mirroredChannels;
+
         channelGettingStartedE2EApps =
           lib.mapAttrs (
             packageName: package:
@@ -259,34 +307,26 @@
           '';
         };
 
-        devShells.default = pkgs.mkShell ({
-            packages =
-              lib.optionals hasDefault [
-                config.packages.aztec-bin
-              ]
-              ++ [
-                pkgs.corepack
+        devShells =
+          (
+            lib.optionalAttrs hasDefault {
+              default = mkDevShell defaultChannel latest;
+            }
+          )
+          // channelDevShells
+          // {
+            mirror = pkgs.mkShell {
+              packages = [
+                pkgs.coreutils
+                pkgs.curl
+                pkgs.git
                 pkgs.jq
                 pkgs.nodejs_24
               ];
 
-            SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-          }
-          // lib.optionalAttrs hasDefault {
-            AZTEC_CONTRACTS_DIR = "${config.packages.aztec-bin}/share/aztec/contracts";
-          });
-
-        devShells.mirror = pkgs.mkShell {
-          packages = [
-            pkgs.coreutils
-            pkgs.curl
-            pkgs.git
-            pkgs.jq
-            pkgs.nodejs_24
-          ];
-
-          SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
-        };
+              SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+            };
+          };
       };
     };
 }

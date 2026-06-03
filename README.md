@@ -20,6 +20,16 @@ nix develop github:alexghr/aztec-packages.nix
 The default shell follows `v4-stable` and includes the Aztec CLI,
 Aztec-bundled native tools (`aztec-nargo`, `aztec-bb`, `aztec-forge`,
 `aztec-cast`, `aztec-anvil`, `aztec-chisel`), Node.js 24, Corepack, and `jq`.
+
+Channel-specific shells are also available:
+
+```bash
+nix develop github:alexghr/aztec-packages.nix#v4-stable
+nix develop github:alexghr/aztec-packages.nix#v4-nightly
+nix develop github:alexghr/aztec-packages.nix#v5-nightly
+nix develop github:alexghr/aztec-packages.nix#v6-nightly
+```
+
 Follow the official Aztec guide to develop contracts, compile with
 `aztec-nargo`/`aztec`, and test against the local network:
 
