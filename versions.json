@@ -6,20 +6,14 @@
       "pattern": "^v4\\.[0-9]+\\.[0-9]+$",
       "tag": "v4.3.1"
     },
-    "v4-nightly": {
-      "description": "Latest Aztec v4 nightly release",
-      "pattern": "^v4\\.[0-9]+\\.0-nightly",
-      "tag": "v4.4.0-nightly.20260605"
-    },
     "v5-nightly": {
       "description": "Latest Aztec v5 nightly release",
       "pattern": "^v5\\.0\\.0-nightly",
       "tag": "v5.0.0-nightly.20260601"
     },
-    "v6-nightly": {
-      "description": "Latest Aztec v6 nightly release",
-      "pattern": "^v6\\.0\\.0-nightly",
-      "tag": "v6.0.0-nightly.20260605"
+    "v5-rc": {
+      "description": "Latest Aztec v5 release candidate",
+      "pattern": "^v5\\.0\\.0-rc"
     }
   },
   "releases": {

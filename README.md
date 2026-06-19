@@ -25,9 +25,8 @@ Channel-specific shells are also available:
 
 ```bash
 nix develop github:alexghr/aztec-packages.nix#v4-stable
-nix develop github:alexghr/aztec-packages.nix#v4-nightly
 nix develop github:alexghr/aztec-packages.nix#v5-nightly
-nix develop github:alexghr/aztec-packages.nix#v6-nightly
+nix develop github:alexghr/aztec-packages.nix#v5-rc
 ```
 
 Follow the official Aztec guide to develop contracts, compile with
@@ -83,7 +82,6 @@ Mirrored channels also get package and app aliases. The initial channels are:
 
 ```text
 v4-stable  -> latest stable v4 release
-v4-nightly -> latest v4 nightly release
 v5-nightly -> latest v5 nightly release
-v6-nightly -> latest v6 nightly release
+v5-rc      -> latest v5 release candidate
 ```

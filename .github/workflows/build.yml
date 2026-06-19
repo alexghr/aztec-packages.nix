@@ -58,8 +58,8 @@ jobs:
         run: |
           nix build -L --no-link --system "${{ matrix.system }}" \
             .#v4-stable \
-            .#v4-nightly \
-            .#v5-nightly
+            .#v5-nightly \
+            .#v5-rc
 
       - name: run end-to-end tests
         if: matrix.system == 'x86_64-linux'

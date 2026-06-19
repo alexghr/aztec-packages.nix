@@ -64,7 +64,7 @@
               channel ? tag && builtins.hasAttr channel.tag releases
           )
           (versions.channels or {});
-        counterContractChannels = lib.filterAttrs (channel: _: channel == "v5-nightly" || channel == "v6-nightly") mirroredChannels;
+        counterContractChannels = lib.filterAttrs (channel: _: channel == "v5-nightly" || channel == "v5-rc") mirroredChannels;
 
         channelPackages =
           lib.concatMapAttrs (
