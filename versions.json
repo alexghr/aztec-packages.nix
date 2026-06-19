@@ -40,7 +40,7 @@
           "noir": {
             "name": "noir-cbd442bcec39a6cb.tar.gz",
             "url": "https://build-cache.aztec-labs.com/noir-cbd442bcec39a6cb.tar.gz",
-            "hash": "sha256-9RTCo0RU9h1FrFvA1ptLS+CZbJlNzFd7lqc+e5oYYfc="
+            "hash": "sha256-yONWvglDHzAvR2jmehD9DNZZ6ptMm+lTPYAtuvD0cw4="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_amd64.tar.gz",
@@ -57,7 +57,7 @@
           "noir": {
             "name": "noir-5ea80dddfcb59448.tar.gz",
             "url": "https://build-cache.aztec-labs.com/noir-5ea80dddfcb59448.tar.gz",
-            "hash": "sha256-9ulkHg6sIUSE3zdsJmu8n+SYjas8Jl6IpkkFYTRY6t8="
+            "hash": "sha256-qrrI9Ov4IlmUUExJJ907++/EQMlvV9n35WLajf6aXxE="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_arm64.tar.gz",
@@ -140,7 +140,7 @@
           "noir": {
             "name": "noir-b786c534d2b9261d.tar.gz",
             "url": "https://build-cache.aztec-labs.com/noir-b786c534d2b9261d.tar.gz",
-            "hash": "sha256-02AfJFKA8BDB7O/A7lVV+ufU4LhWUkyppV3bVP3qfhg="
+            "hash": "sha256-UH3+DrT1cNlr4FE5y2ua0jzrDQA1hl1nMg+2DRflf/k="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_amd64.tar.gz",
@@ -157,7 +157,7 @@
           "noir": {
             "name": "noir-1a6d5e0398c9fea0.tar.gz",
             "url": "https://build-cache.aztec-labs.com/noir-1a6d5e0398c9fea0.tar.gz",
-            "hash": "sha256-DGYmWyK27KmJ6j1rNhnatYFiWk7Z3CHowJMDeQSn2FM="
+            "hash": "sha256-JLYhKSKeh69mlauRnxhZ3ZinFSc2FlJjfKUMCmsnk2k="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_arm64.tar.gz",
@@ -240,7 +240,7 @@
           "noir": {
             "name": "noir-b786c534d2b9261d.tar.gz",
             "url": "https://build-cache.aztec-labs.com/noir-b786c534d2b9261d.tar.gz",
-            "hash": "sha256-02AfJFKA8BDB7O/A7lVV+ufU4LhWUkyppV3bVP3qfhg="
+            "hash": "sha256-UH3+DrT1cNlr4FE5y2ua0jzrDQA1hl1nMg+2DRflf/k="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_amd64.tar.gz",
@@ -257,7 +257,7 @@
           "noir": {
             "name": "noir-1a6d5e0398c9fea0.tar.gz",
             "url": "https://build-cache.aztec-labs.com/noir-1a6d5e0398c9fea0.tar.gz",
-            "hash": "sha256-MhHd6Yz1sJIz98q6nuREK8XofWm5KBtlElA8rZPz9HM="
+            "hash": "sha256-JLYhKSKeh69mlauRnxhZ3ZinFSc2FlJjfKUMCmsnk2k="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_arm64.tar.gz",
@@ -340,7 +340,7 @@
           "noir": {
             "name": "noir-cbd442bcec39a6cb.tar.gz",
             "url": "https://build-cache.aztec-labs.com/noir-cbd442bcec39a6cb.tar.gz",
-            "hash": "sha256-9RTCo0RU9h1FrFvA1ptLS+CZbJlNzFd7lqc+e5oYYfc="
+            "hash": "sha256-yONWvglDHzAvR2jmehD9DNZZ6ptMm+lTPYAtuvD0cw4="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_amd64.tar.gz",
@@ -357,7 +357,7 @@
           "noir": {
             "name": "noir-5ea80dddfcb59448.tar.gz",
             "url": "https://build-cache.aztec-labs.com/noir-5ea80dddfcb59448.tar.gz",
-            "hash": "sha256-9ulkHg6sIUSE3zdsJmu8n+SYjas8Jl6IpkkFYTRY6t8="
+            "hash": "sha256-qrrI9Ov4IlmUUExJJ907++/EQMlvV9n35WLajf6aXxE="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_arm64.tar.gz",
