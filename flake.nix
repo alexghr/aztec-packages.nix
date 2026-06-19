@@ -64,7 +64,14 @@
               channel ? tag && builtins.hasAttr channel.tag releases
           )
           (versions.channels or {});
-        counterContractChannels = lib.filterAttrs (channel: _: channel == "v5-nightly" || channel == "v5-rc") mirroredChannels;
+        channelTestEnabled = testName: channel:
+          ! (
+            channel ? tests
+            && builtins.hasAttr testName channel.tests
+            && channel.tests.${testName} == false
+          );
+        gettingStartedChannels = lib.filterAttrs (_: channel: channelTestEnabled "gettingStarted" channel) mirroredChannels;
+        counterContractChannels = lib.filterAttrs (_: channel: channelTestEnabled "counterContract" channel) mirroredChannels;
 
         channelPackages =
           lib.concatMapAttrs (
@@ -108,13 +115,15 @@
               tests;
           };
 
-        mkChannelE2E = channel: release:
+        mkChannelE2E = channel: metadata: let
+          release = releases.${metadata.tag};
+        in
           mkE2ESuite "${channel}-e2e" (
-            [
-              (mkGettingStartedE2E channel release)
-            ]
+            lib.optional
+            (channelTestEnabled "gettingStarted" metadata)
+            (mkGettingStartedE2E channel release)
             ++ lib.optional
-            (builtins.hasAttr channel counterContractChannels)
+            (channelTestEnabled "counterContract" metadata)
             (mkCounterContractE2E channel release)
           );
 
@@ -126,7 +135,7 @@
               "${channel}-getting-started-e2e" = mkGettingStartedE2E channel release;
             }
           )
-          mirroredChannels;
+          gettingStartedChannels;
 
         channelCounterContractE2EPackages =
           lib.concatMapAttrs (
@@ -140,10 +149,8 @@
 
         channelE2EPackages =
           lib.concatMapAttrs (
-            channel: metadata: let
-              release = releases.${metadata.tag};
-            in {
-              "${channel}-e2e" = mkChannelE2E channel release;
+            channel: metadata: {
+              "${channel}-e2e" = mkChannelE2E channel metadata;
             }
           )
           mirroredChannels;
