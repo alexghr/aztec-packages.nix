@@ -65,6 +65,14 @@ in
         ! -name ${lib.escapeShellArg platformDirs.bbJs} \
         -exec rm -rf {} +
 
+      # Some releases ship Foundry deployment run caches. Forge rewrites those
+      # paths during localnet startup, so keep only the cache file and let Forge
+      # recreate writable run-cache directories in the runtime temp directory.
+      l1ContractsCache="$nodeModules/@aztec/l1-artifacts/l1-contracts/cache"
+      if [ -d "$l1ContractsCache" ]; then
+        find "$l1ContractsCache" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
+      fi
+
       # this script copies files from its package to a tmp dir and calls forge for deployments
       # in this case the files are copied from the nix store as read-only
       # forge needs to be able to write cache files. This patch calls chmod to allow writes
