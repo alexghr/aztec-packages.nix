@@ -37,6 +37,13 @@ in
       tar -xzf ${src} -C $out/bin
       chmod +x $out/bin/* || true
 
+      for required in forge cast anvil chisel; do
+        if [ ! -x "$out/bin/$required" ]; then
+          echo "Foundry artifact did not contain required binary: $required" >&2
+          exit 1
+        fi
+      done
+
       runHook postInstall
     '';
 

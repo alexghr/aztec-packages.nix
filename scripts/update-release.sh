@@ -77,55 +77,38 @@ for tool in curl git jq nix; do
 done
 
 aztec_repo="AztecProtocol/aztec-packages"
-barretenberg_repo="AztecProtocol/barretenberg"
 foundry_repo="foundry-rs/foundry"
 aztec_repo_api="https://api.github.com/repos/$aztec_repo"
-barretenberg_repo_api="https://api.github.com/repos/$barretenberg_repo"
 foundry_repo_api="https://api.github.com/repos/$foundry_repo"
 version=${tag#v}
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
 
 aztec_release_json="$tmp_dir/aztec-release.json"
-barretenberg_release_json="$tmp_dir/barretenberg-release.json"
 foundry_release_json="$tmp_dir/foundry-release.json"
-aztec_checkout="$tmp_dir/aztec-checkout"
 install_versions="$tmp_dir/install-versions"
 manifest_json="$tmp_dir/manifest.json"
 systems=(x86_64-linux aarch64-linux)
+
+die() {
+  echo "$*" >&2
+  exit 1
+}
 
 if ! git ls-remote --exit-code --tags "https://github.com/$aztec_repo.git" "refs/tags/$tag" >/dev/null; then
   echo "upstream tag not found in $aztec_repo: $tag" >&2
   exit 1
 fi
 
-curl --fail --location --silent --show-error \
+if ! curl --fail --location --silent \
   "$aztec_repo_api/releases/tags/$tag" \
-  --output "$aztec_release_json" || true
-
-curl --fail --location --silent --show-error \
-  "$barretenberg_repo_api/releases/tags/$tag" \
-  --output "$barretenberg_release_json" || true
+  --output "$aztec_release_json"; then
+  : > "$aztec_release_json"
+fi
 
 curl --fail --location --silent --show-error \
   "https://install.aztec-labs.com/$version/versions" \
-  --output "$install_versions" || true
-
-git clone \
-  --filter=blob:none \
-  --depth 1 \
-  --branch "$tag" \
-  "https://github.com/$aztec_repo.git" \
-  "$aztec_checkout" >/dev/null
-
-git -C "$aztec_checkout" submodule update \
-  --init \
-  --depth 1 \
-  noir/noir-repo >/dev/null
-
-for ci3_source in "$aztec_checkout/ci3/source" "$aztec_checkout/ci3/source_bootstrap"; do
-  sed -i '/source .*source_redis/d' "$ci3_source"
-done
+  --output "$install_versions" || die "missing Aztec install versions file for $version"
 
 release_url="https://github.com/$aztec_repo/releases/tag/$tag"
 if [ -s "$aztec_release_json" ]; then
@@ -145,6 +128,7 @@ jq -n \
   --arg tag "$tag" \
   --arg version "$version" \
   --arg nodeVersion "$node_version" \
+  --arg noirVersion "$noir_version" \
   --arg foundryVersion "$foundry_version" \
   --arg upstreamRepo "$aztec_repo" \
   --arg releaseUrl "$release_url" \
@@ -155,6 +139,7 @@ jq -n \
       ($tag): {
         version: $version,
         nodeVersion: $nodeVersion,
+        noirVersion: $noirVersion,
         foundryVersion: $foundryVersion,
         upstream: {
           repository: $upstreamRepo,
@@ -175,11 +160,6 @@ replace_manifest() {
   local next="$tmp_dir/manifest.next.json"
   jq "$@" "$manifest_json" > "$next"
   mv "$next" "$manifest_json"
-}
-
-die() {
-  echo "$*" >&2
-  exit 1
 }
 
 sri_from_digest() {
@@ -205,7 +185,7 @@ asset_field() {
   local release_file
   local value
 
-  for release_file in "$aztec_release_json" "$barretenberg_release_json" "$foundry_release_json"; do
+  for release_file in "$aztec_release_json" "$foundry_release_json"; do
     if [ ! -s "$release_file" ]; then
       continue
     fi
@@ -221,19 +201,6 @@ asset_field() {
   done
 }
 
-system_asset_suffix() {
-  case "$1" in
-    x86_64-linux) echo "amd64-linux" ;;
-    aarch64-linux) echo "arm64-linux" ;;
-    x86_64-darwin) echo "amd64-darwin" ;;
-    aarch64-darwin) echo "arm64-darwin" ;;
-    *)
-      echo "unknown system: $1" >&2
-      return 1
-      ;;
-  esac
-}
-
 foundry_asset_suffix() {
   case "$1" in
     x86_64-linux) echo "linux_amd64" ;;
@@ -247,10 +214,10 @@ foundry_asset_suffix() {
   esac
 }
 
-aztec_noir_platform_tag() {
+noirup_asset_platform() {
   case "$1" in
-    x86_64-linux) echo "linux-gnu-x86_64" ;;
-    aarch64-linux) echo "linux-gnu-aarch64" ;;
+    x86_64-linux) echo "x86_64-unknown-linux-gnu" ;;
+    aarch64-linux) echo "aarch64-unknown-linux-gnu" ;;
     *)
       echo "unknown system: $1" >&2
       return 1
@@ -258,36 +225,15 @@ aztec_noir_platform_tag() {
   esac
 }
 
-aztec_noir_cache_name() {
-  local system=$1
-  local platform
-  local cache_hash
-
-  platform=$(aztec_noir_platform_tag "$system")
-
-  cache_hash=$(
-    cd "$aztec_checkout/noir"
-    CI=1 \
-      CURRENT_VERSION="$version" \
-      REF_NAME="$tag" \
-      PLATFORM_TAG="$platform" \
-      USE_TEST_CACHE=0 \
-      ./bootstrap.sh hash
-  )
-
-  echo "noir-$cache_hash.tar.gz"
-}
-
-system_has_asset() {
-  local system=$1
-  local key=$2
-
-  jq -e \
-    --arg tag "$tag" \
-    --arg system "$system" \
-    --arg key "$key" \
-    '.releases[$tag].systems[$system][$key] != null' \
-    "$manifest_json" >/dev/null
+noirup_release_tag() {
+  case "$1" in
+    [0-9]*)
+      echo "v$1"
+      ;;
+    *)
+      echo "$1"
+      ;;
+  esac
 }
 
 add_github_asset() {
@@ -322,6 +268,30 @@ add_github_asset() {
     --arg url "$url" \
     --arg hash "$hash" \
     '.releases[$tag].systems[$system][$key] = {
+      name: $name,
+      url: $url,
+      hash: $hash
+    }'
+}
+
+add_prefetched_asset() {
+  local system=$1
+  local key=$2
+  local name=$3
+  local url=$4
+  local hash
+
+  hash=$(nix store prefetch-file --json "$url" | jq -r '.hash') || return 1
+
+  replace_manifest \
+    --arg tag "$tag" \
+    --arg system "$system" \
+    --arg key "$key" \
+    --arg name "$name" \
+    --arg url "$url" \
+    --arg hash "$hash" \
+    '.releases[$tag].systems[$system][$key] = {
+      source: "noirup",
       name: $name,
       url: $url,
       hash: $hash
@@ -368,49 +338,29 @@ add_npm_package() {
     }'
 }
 
-add_barretenberg_asset() {
+add_noirup_asset() {
   local system=$1
   local suffix
-
-  suffix=$(system_asset_suffix "$system")
-  add_github_asset "$system" barretenberg "barretenberg-avm-$suffix.tar.gz" 0
-  if ! system_has_asset "$system" barretenberg; then
-    add_github_asset "$system" barretenberg "barretenberg-$suffix.tar.gz" 1
-  fi
-}
-
-add_aztec_noir_cache_asset() {
-  local system=$1
-  local cache_name
+  local base_url
+  local release_tag
+  local name
   local url
-  local hash
 
-  cache_name=$(aztec_noir_cache_name "$system")
-  url="https://build-cache.aztec-labs.com/$cache_name"
-
-  if ! hash=$(nix store prefetch-file --json "$url" | jq -r '.hash'); then
-    die "missing Aztec Noir cache artifact $cache_name"
+  if [ -z "$noir_version" ]; then
+    die "missing Noir version in install versions file"
   fi
 
-  replace_manifest \
-    --arg tag "$tag" \
-    --arg system "$system" \
-    --arg name "$cache_name" \
-    --arg url "$url" \
-    --arg hash "$hash" \
-    '.releases[$tag].systems[$system].noir = {
-      name: $name,
-      url: $url,
-      hash: $hash
-    }'
+  suffix=$(noirup_asset_platform "$system")
+  release_tag=$(noirup_release_tag "$noir_version")
+  base_url="https://github.com/noir-lang/noir/releases/download/$release_tag"
+  name="noir-$suffix.tar.gz"
+  url="$base_url/$name"
+
+  add_prefetched_asset "$system" noir "$name" "$url" || die "missing noirup asset $url"
 }
 
 for system in "${systems[@]}"; do
-  add_barretenberg_asset "$system"
-done
-
-for system in "${systems[@]}"; do
-  add_aztec_noir_cache_asset "$system"
+  add_noirup_asset "$system"
 done
 
 if [ -n "$foundry_version" ]; then
@@ -429,7 +379,6 @@ else
 fi
 
 add_npm_package aztec "@aztec/aztec"
-add_npm_package cli "@aztec/cli"
 add_npm_package cliWallet "@aztec/cli-wallet"
 add_npm_package bbJs "@aztec/bb.js"
 add_npm_package noirContractsJs "@aztec/noir-contracts.js"
@@ -439,14 +388,23 @@ add_npm_package l1Artifacts "@aztec/l1-artifacts"
 
 for system in "${systems[@]}"; do
   if ! jq -e --arg tag "$tag" --arg system "$system" '
-    .releases[$tag].systems[$system].barretenberg?
-    and .releases[$tag].systems[$system].foundry?
+    .releases[$tag].systems[$system].foundry?
     and .releases[$tag].systems[$system].noir?
   ' "$manifest_json" >/dev/null; then
     echo "release $tag is incomplete for $system; refusing to update $versions_json" >&2
     exit 1
   fi
 done
+
+if [ -f "$versions_json" ]; then
+  existing_npm_deps_hash=$(jq -r --arg tag "$tag" '.releases[$tag].npmDepsHash // empty' "$versions_json")
+  if [ -n "$existing_npm_deps_hash" ]; then
+    replace_manifest \
+      --arg tag "$tag" \
+      --arg hash "$existing_npm_deps_hash" \
+      '.releases[$tag].npmDepsHash = $hash'
+  fi
+fi
 
 if [ "$dry_run" -eq 1 ]; then
   jq . "$manifest_json"
@@ -468,7 +426,17 @@ if [ -f "$versions_json" ]; then
         else .channels
         end
       )
-    | .releases = ((.releases // {}) + $incoming.releases)
+    | .releases = (
+        reduce ($incoming.releases | to_entries[]) as $entry
+          (.releases // {};
+            .[$entry.key] = (
+              ($entry.value) as $next |
+              (.[$entry.key] // {}) as $existing |
+              $next
+              | .npmDepsHash = ($existing.npmDepsHash // $next.npmDepsHash)
+            )
+          )
+      )
   ' "$versions_json" "$manifest_json" > "$next_versions"
   mv "$next_versions" "$versions_json"
 else

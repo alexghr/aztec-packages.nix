@@ -24,6 +24,7 @@
     "v4.4.0-nightly.20260605": {
       "version": "4.4.0-nightly.20260605",
       "nodeVersion": "24.12.0",
+      "noirVersion": "nightly-2026-05-09",
       "foundryVersion": "1.4.1",
       "upstream": {
         "repository": "AztecProtocol/aztec-packages",
@@ -35,15 +36,11 @@
       },
       "systems": {
         "x86_64-linux": {
-          "barretenberg": {
-            "name": "barretenberg-avm-amd64-linux.tar.gz",
-            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.4.0-nightly.20260605/barretenberg-avm-amd64-linux.tar.gz",
-            "hash": "sha256-WaKuKYkd4LVJnDqNEg7sF+DFY0WXceYQ/pHr3lj0ioE="
-          },
           "noir": {
-            "name": "noir-b786c534d2b9261d.tar.gz",
-            "url": "https://build-cache.aztec-labs.com/noir-b786c534d2b9261d.tar.gz",
-            "hash": "sha256-UH3+DrT1cNlr4FE5y2ua0jzrDQA1hl1nMg+2DRflf/k="
+            "source": "noirup",
+            "name": "noir-x86_64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-x86_64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-rRCflSRqRdK9sHkAv+yhc5Jcp6SjicLhH7Rx9zKazk0="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_amd64.tar.gz",
@@ -52,15 +49,11 @@
           }
         },
         "aarch64-linux": {
-          "barretenberg": {
-            "name": "barretenberg-arm64-linux.tar.gz",
-            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.4.0-nightly.20260605/barretenberg-arm64-linux.tar.gz",
-            "hash": "sha256-uAu72YqqzCa7RmUDpy9z0vjJDvmvYwwOFG+Y0dDjcS4="
-          },
           "noir": {
-            "name": "noir-1a6d5e0398c9fea0.tar.gz",
-            "url": "https://build-cache.aztec-labs.com/noir-1a6d5e0398c9fea0.tar.gz",
-            "hash": "sha256-JLYhKSKeh69mlauRnxhZ3ZinFSc2FlJjfKUMCmsnk2k="
+            "source": "noirup",
+            "name": "noir-aarch64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/nightly-2026-05-09/noir-aarch64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-qo3yUJHvjnLQgnI3inteoUseHeRCcSwtsYL8jcZg6CM="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_arm64.tar.gz",
@@ -124,6 +117,7 @@
     "v6.0.0-nightly.20260605": {
       "version": "6.0.0-nightly.20260605",
       "nodeVersion": "24.12.0",
+      "noirVersion": "temp-serialization-tag",
       "foundryVersion": "1.4.1",
       "upstream": {
         "repository": "AztecProtocol/aztec-packages",
@@ -135,15 +129,11 @@
       },
       "systems": {
         "x86_64-linux": {
-          "barretenberg": {
-            "name": "barretenberg-avm-amd64-linux.tar.gz",
-            "url": "https://github.com/AztecProtocol/barretenberg/releases/download/v6.0.0-nightly.20260605/barretenberg-avm-amd64-linux.tar.gz",
-            "hash": "sha256-Yf+DBixDM1o0K8fNXfc0t8rN+0sp5pFrLFdomEPQnlw="
-          },
           "noir": {
-            "name": "noir-cbd442bcec39a6cb.tar.gz",
-            "url": "https://build-cache.aztec-labs.com/noir-cbd442bcec39a6cb.tar.gz",
-            "hash": "sha256-yONWvglDHzAvR2jmehD9DNZZ6ptMm+lTPYAtuvD0cw4="
+            "source": "noirup",
+            "name": "noir-x86_64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/temp-serialization-tag/noir-x86_64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-+VnrrvMapFo4bXdehvWEcDfdw1QYQeVmYi1MI92DmtI="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_amd64.tar.gz",
@@ -152,15 +142,11 @@
           }
         },
         "aarch64-linux": {
-          "barretenberg": {
-            "name": "barretenberg-arm64-linux.tar.gz",
-            "url": "https://github.com/AztecProtocol/barretenberg/releases/download/v6.0.0-nightly.20260605/barretenberg-arm64-linux.tar.gz",
-            "hash": "sha256-/PCzsKMXXYxYi9M+WQs6lWnMPUrhUDBem7qZQucSpvw="
-          },
           "noir": {
-            "name": "noir-5ea80dddfcb59448.tar.gz",
-            "url": "https://build-cache.aztec-labs.com/noir-5ea80dddfcb59448.tar.gz",
-            "hash": "sha256-qrrI9Ov4IlmUUExJJ907++/EQMlvV9n35WLajf6aXxE="
+            "source": "noirup",
+            "name": "noir-aarch64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/temp-serialization-tag/noir-aarch64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-p0by5/Qm+ryTxujAo03vxjto/15fQ5Ttv8SFDVFjtEc="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_arm64.tar.gz",
@@ -224,6 +210,7 @@
     "v4.4.0": {
       "version": "4.4.0",
       "nodeVersion": "24.12.0",
+      "noirVersion": "v1.0.0-beta.22",
       "foundryVersion": "1.4.1",
       "upstream": {
         "repository": "AztecProtocol/aztec-packages",
@@ -235,15 +222,11 @@
       },
       "systems": {
         "x86_64-linux": {
-          "barretenberg": {
-            "name": "barretenberg-avm-amd64-linux.tar.gz",
-            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.4.0/barretenberg-avm-amd64-linux.tar.gz",
-            "hash": "sha256-egeXNEFswhghAjoiWWB5LpzyQvvvgLUIPsOOaII4djo="
-          },
           "noir": {
-            "name": "noir-b786c534d2b9261d.tar.gz",
-            "url": "https://build-cache.aztec-labs.com/noir-b786c534d2b9261d.tar.gz",
-            "hash": "sha256-doRyq6vyANP584C8JSeEuHcZrNq0xbGQAmW55Xd/2Ns="
+            "source": "noirup",
+            "name": "noir-x86_64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/v1.0.0-beta.22/noir-x86_64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-ZBe/NmJf+fCuENCuqERWxaMo5+tTLia0xPDaMS/AMW8="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_amd64.tar.gz",
@@ -252,15 +235,11 @@
           }
         },
         "aarch64-linux": {
-          "barretenberg": {
-            "name": "barretenberg-arm64-linux.tar.gz",
-            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v4.4.0/barretenberg-arm64-linux.tar.gz",
-            "hash": "sha256-x+Q8ep8opqyCd1oS3n0dkVfvoizmNLy71SqwIMqraZY="
-          },
           "noir": {
-            "name": "noir-1a6d5e0398c9fea0.tar.gz",
-            "url": "https://build-cache.aztec-labs.com/noir-1a6d5e0398c9fea0.tar.gz",
-            "hash": "sha256-JLYhKSKeh69mlauRnxhZ3ZinFSc2FlJjfKUMCmsnk2k="
+            "source": "noirup",
+            "name": "noir-aarch64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/v1.0.0-beta.22/noir-aarch64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-R1jfZjbbh9FhoaVs2rEfuqQ3egchpYI3MSnT25JRC8w="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_arm64.tar.gz",
@@ -324,6 +303,7 @@
     "v5.0.0-rc.2": {
       "version": "5.0.0-rc.2",
       "nodeVersion": "24.12.0",
+      "noirVersion": "v1.0.0-beta.22",
       "foundryVersion": "1.4.1",
       "upstream": {
         "repository": "AztecProtocol/aztec-packages",
@@ -335,15 +315,11 @@
       },
       "systems": {
         "x86_64-linux": {
-          "barretenberg": {
-            "name": "barretenberg-avm-amd64-linux.tar.gz",
-            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v5.0.0-rc.2/barretenberg-avm-amd64-linux.tar.gz",
-            "hash": "sha256-3b3xxlZxwrxT5OmXDHImyFk3y3iGpNWOy3iCByfkPfY="
-          },
           "noir": {
-            "name": "noir-967b160ea236a7c8.tar.gz",
-            "url": "https://build-cache.aztec-labs.com/noir-967b160ea236a7c8.tar.gz",
-            "hash": "sha256-SXfbQZXlPtkukczvwA15g60oBW3skxre4gE/vaSNf/A="
+            "source": "noirup",
+            "name": "noir-x86_64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/v1.0.0-beta.22/noir-x86_64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-ZBe/NmJf+fCuENCuqERWxaMo5+tTLia0xPDaMS/AMW8="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_amd64.tar.gz",
@@ -352,15 +328,11 @@
           }
         },
         "aarch64-linux": {
-          "barretenberg": {
-            "name": "barretenberg-arm64-linux.tar.gz",
-            "url": "https://github.com/AztecProtocol/aztec-packages/releases/download/v5.0.0-rc.2/barretenberg-arm64-linux.tar.gz",
-            "hash": "sha256-gbc+EBqKr8ubhDKQCPrTXsnqcGfpZv42xCYpWQXw48s="
-          },
           "noir": {
-            "name": "noir-bfbdc9fbd760e3bf.tar.gz",
-            "url": "https://build-cache.aztec-labs.com/noir-bfbdc9fbd760e3bf.tar.gz",
-            "hash": "sha256-cWXebeM3YIvG244T5YOtqLT3QmLNn7oi7ZgoPigh/B4="
+            "source": "noirup",
+            "name": "noir-aarch64-unknown-linux-gnu.tar.gz",
+            "url": "https://github.com/noir-lang/noir/releases/download/v1.0.0-beta.22/noir-aarch64-unknown-linux-gnu.tar.gz",
+            "hash": "sha256-R1jfZjbbh9FhoaVs2rEfuqQ3egchpYI3MSnT25JRC8w="
           },
           "foundry": {
             "name": "foundry_v1.4.1_linux_arm64.tar.gz",

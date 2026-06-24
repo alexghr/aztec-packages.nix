@@ -4,9 +4,6 @@
   tag,
   release,
 }: let
-  barretenberg = pkgs.callPackage ./barretenberg-bin.nix {
-    inherit tag release system;
-  };
   noir = pkgs.callPackage ./noir-bin.nix {
     inherit tag release system;
   };
@@ -20,11 +17,11 @@
     inherit tag release system;
   };
   node-runtime = pkgs.callPackage ./node-runtime.nix {
-    inherit tag release system barretenberg noir contracts foundry node-runtime-unwrapped;
+    inherit tag release system noir contracts foundry node-runtime-unwrapped;
   };
   aztec-bin = pkgs.callPackage ./aztec-bin.nix {
-    inherit tag release system barretenberg noir contracts foundry node-runtime;
+    inherit tag release system noir contracts foundry node-runtime;
   };
 in {
-  inherit aztec-bin barretenberg contracts foundry node-runtime node-runtime-unwrapped noir;
+  inherit aztec-bin contracts foundry node-runtime node-runtime-unwrapped noir;
 }

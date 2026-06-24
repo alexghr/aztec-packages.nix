@@ -1,5 +1,4 @@
 {
-  barretenberg,
   cacert,
   contracts,
   foundry,
@@ -15,7 +14,6 @@
   system,
 }: let
   runtimePath = lib.makeBinPath [
-    barretenberg
     foundry
     jq
     nodejs_24
@@ -28,11 +26,7 @@
       "--prefix PATH : ${runtimePath}"
       "--set SSL_CERT_FILE ${cacert}/etc/ssl/certs/ca-bundle.crt"
       "--set AZTEC_CONTRACTS_DIR ${contracts}/share/aztec/contracts"
-      "--set BB ${barretenberg}/bin/bb"
-      "--set BB_BINARY_PATH ${barretenberg}/bin/bb"
-      "--set ACVM_BINARY_PATH ${noir}/bin/acvm"
       "--run 'export BB_WORKING_DIRECTORY=\"\${BB_WORKING_DIRECTORY:-\${TMPDIR:-/tmp}/aztec-bb}\"'"
-      "--run 'export ACVM_WORKING_DIRECTORY=\"\${ACVM_WORKING_DIRECTORY:-\${TMPDIR:-/tmp}/aztec-acvm}\"'"
     ];
 in
   stdenvNoCC.mkDerivation {
@@ -60,8 +54,10 @@ in
       wrapAztec "$npmBin/aztec" aztec
       wrapAztec "$npmBin/aztec-wallet" aztec-wallet
 
-      for cmd in bb-cli blob-client noir-codegen txe; do
-        wrapAztec "$npmBin/$cmd" "aztec-$cmd"
+      for cmd in bb bb-cli blob-client noir-codegen txe; do
+        if [ -x "$npmBin/$cmd" ]; then
+          wrapAztec "$npmBin/$cmd" "aztec-$cmd"
+        fi
       done
 
       runHook postInstall
