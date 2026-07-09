@@ -12,7 +12,7 @@
     "v5-nightly": {
       "description": "Latest Aztec v5 nightly release",
       "pattern": "^v5\\.0\\.0-nightly",
-      "tag": "v5.0.0-nightly.20260707"
+      "tag": "v5.0.0-nightly.20260709"
     },
     "v5-rc": {
       "description": "Latest Aztec v5 release candidate",
@@ -421,24 +421,24 @@
       },
       "npmDepsHash": "sha256-0oEw/IWc3Hr3cqu6id0NujkJhVeJrjXLkPV/vVqRioA="
     },
-    "v5.0.0-nightly.20260707": {
-      "version": "5.0.0-nightly.20260707",
+    "v5.0.0-nightly.20260709": {
+      "version": "5.0.0-nightly.20260709",
       "nodeVersion": "24.12.0",
       "foundryVersion": "1.4.1",
       "upstream": {
         "repository": "AztecProtocol/aztec-packages",
-        "releaseUrl": "https://github.com/AztecProtocol/aztec-packages/releases/tag/v5.0.0-nightly.20260707",
-        "installBaseUrl": "https://install.aztec-labs.com/5.0.0-nightly.20260707"
+        "releaseUrl": "https://github.com/AztecProtocol/aztec-packages/releases/tag/v5.0.0-nightly.20260709",
+        "installBaseUrl": "https://install.aztec-labs.com/5.0.0-nightly.20260709"
       },
       "nodeRuntime": {
-        "path": "v5.0.0-nightly.20260707"
+        "path": "v5.0.0-nightly.20260709"
       },
       "systems": {
         "x86_64-linux": {
           "barretenberg": {
             "name": "barretenberg-avm-amd64-linux.tar.gz",
-            "url": "https://github.com/AztecProtocol/barretenberg/releases/download/v5.0.0-nightly.20260707/barretenberg-avm-amd64-linux.tar.gz",
-            "hash": "sha256-G+q0ojM/sXdiqgo1nIbXBVjrJNL11wsXmSg1kzrxwhA="
+            "url": "https://github.com/AztecProtocol/barretenberg/releases/download/v5.0.0-nightly.20260709/barretenberg-avm-amd64-linux.tar.gz",
+            "hash": "sha256-CJJiWAvBY/lWGoWQJ3v0jHgK9JE7lUeQ28nLulxqrkQ="
           },
           "noir": {
             "name": "noir-967b160ea236a7c8.tar.gz",
@@ -454,8 +454,8 @@
         "aarch64-linux": {
           "barretenberg": {
             "name": "barretenberg-arm64-linux.tar.gz",
-            "url": "https://github.com/AztecProtocol/barretenberg/releases/download/v5.0.0-nightly.20260707/barretenberg-arm64-linux.tar.gz",
-            "hash": "sha256-uN2tT3Wgvi8HQWPJK+7i86O2LsgMshUABs4Hdgm237s="
+            "url": "https://github.com/AztecProtocol/barretenberg/releases/download/v5.0.0-nightly.20260709/barretenberg-arm64-linux.tar.gz",
+            "hash": "sha256-OwBGtn1wXJsy70yIW5DsQhFVLdfHp1BO7Yw/TDsJTWA="
           },
           "noir": {
             "name": "noir-bfbdc9fbd760e3bf.tar.gz",
@@ -472,54 +472,54 @@
       "npm": {
         "aztec": {
           "package": "@aztec/aztec",
-          "url": "https://registry.npmjs.org/@aztec/aztec/-/aztec-5.0.0-nightly.20260707.tgz",
-          "hash": "sha512-/UHnlgcyJWvpFJbu7bAXpz1GLclOcmm125oKFRnelGNfSeq17yEBl36VXLeVu83yE5BKqkDRIW81SL/k7fxyIA==",
-          "shasum": "7b9dc3e67d3185cd2a5af4c146e9facfc494e3c7"
+          "url": "https://registry.npmjs.org/@aztec/aztec/-/aztec-5.0.0-nightly.20260709.tgz",
+          "hash": "sha512-NOmUSjsg6wfzuYJkYr4QxrbYDogPAGS4A54KThYTQaxxBSYbb/Ee+8UacKZ84VT5QWi1R11Ak6qc7VW5KCGGAA==",
+          "shasum": "c76cce94ccd02fa28f861e691d4073494c265593"
         },
         "cli": {
           "package": "@aztec/cli",
-          "url": "https://registry.npmjs.org/@aztec/cli/-/cli-5.0.0-nightly.20260707.tgz",
-          "hash": "sha512-4bJZA0oY3AzMtSF0F/6/9+vMHa/NphlTd9Gv/OO8ysrqcakEnOnlZMWAkwBncAE2xtmoe+pDLMiP2cKW9JZ5kw==",
-          "shasum": "29be4b69f9668ee8840284ef9454998833a587f6"
+          "url": "https://registry.npmjs.org/@aztec/cli/-/cli-5.0.0-nightly.20260709.tgz",
+          "hash": "sha512-/KVgvaea3sUwsvR1MzBitwGRwpMo0acRUC044C3DFAEFBKTWGzVtlablEeeKB/JVOwdmGcSERu4BUoV3sTXZ5A==",
+          "shasum": "df4e107b913f87629251aa2a4ff760f59faa040f"
         },
         "cliWallet": {
           "package": "@aztec/cli-wallet",
-          "url": "https://registry.npmjs.org/@aztec/cli-wallet/-/cli-wallet-5.0.0-nightly.20260707.tgz",
-          "hash": "sha512-hU9Vzp/bM9gUplC5uM/Sj7h6mSmuFoUmfdYNsu9ErO3BPQFnJ/uepASVQ6nq1RZyAxZ5t13CgNDp/tgimAtoRA==",
-          "shasum": "454a123ad24bc40a1a35634bc6958b31763ae0bd"
+          "url": "https://registry.npmjs.org/@aztec/cli-wallet/-/cli-wallet-5.0.0-nightly.20260709.tgz",
+          "hash": "sha512-M8VCxNmqHRp5PhCa41nYZGao/Pb8eQFVKo3bPJNNT4wkF19sX5Uz1XjzrgZqln+AiwUb/XO3595+ZOroIl7t3Q==",
+          "shasum": "e536273b6eab080ad2fd2dc356bce26c82f92737"
         },
         "bbJs": {
           "package": "@aztec/bb.js",
-          "url": "https://registry.npmjs.org/@aztec/bb.js/-/bb.js-5.0.0-nightly.20260707.tgz",
-          "hash": "sha512-zXnKIKP9FEKaGYnu+P9MzAsyNS4ohUzi0rLbv9+2rEZrYQn/MKyX1eHhpby3pd0FVWNMK/bQFS7TgTuQl2Nl/g==",
-          "shasum": "e503b0ddf003dd4cabfc146adf66375751eb91e4"
+          "url": "https://registry.npmjs.org/@aztec/bb.js/-/bb.js-5.0.0-nightly.20260709.tgz",
+          "hash": "sha512-wFR9uXuLSYr/dTq2fUnpzavcmPTKmnrDGd0PQL+ZnhGha45zdCbS0E3ReFp+XmIf2xmsnfOOKfODG74IagaBcg==",
+          "shasum": "aec895069fadfda0fff281188131cf94ca2520b5"
         },
         "noirContractsJs": {
           "package": "@aztec/noir-contracts.js",
-          "url": "https://registry.npmjs.org/@aztec/noir-contracts.js/-/noir-contracts.js-5.0.0-nightly.20260707.tgz",
-          "hash": "sha512-rBytHS225v12y+wVgnk7PF/Fch5fcgP/ZS8QAgRZNbW2O19idRcljQv6z334DYEKtrgABzcXP11rKLUiQZCAHg==",
-          "shasum": "ce9379eb1893534a9d9c7c932f1d5f7c113a067b"
+          "url": "https://registry.npmjs.org/@aztec/noir-contracts.js/-/noir-contracts.js-5.0.0-nightly.20260709.tgz",
+          "hash": "sha512-4NXfXZcn+iWl+F8Sn55iX1VlloSpcrbYviO1GgpO2g02r6R1jbsC24otRRbRMVon4NHd81EaCzVJv4zb6+aSIw==",
+          "shasum": "77ca2e01f7b9dca28e1603d1829352c80e2124d3"
         },
         "noirTestContractsJs": {
           "package": "@aztec/noir-test-contracts.js",
-          "url": "https://registry.npmjs.org/@aztec/noir-test-contracts.js/-/noir-test-contracts.js-5.0.0-nightly.20260707.tgz",
-          "hash": "sha512-iRCNEkfzTDUMs0mM3QMtXtOEdrFN0YMHJokaH7+VLGTrCIF2zyx0aY05TuZbdksZW8NJwcP0zpoHemU9xivH8g==",
-          "shasum": "20e3af84307f61ed7e12daa0e7d57ddaf142bb8f"
+          "url": "https://registry.npmjs.org/@aztec/noir-test-contracts.js/-/noir-test-contracts.js-5.0.0-nightly.20260709.tgz",
+          "hash": "sha512-2SQ+t5NKFOIzTd9B1e9ivsAhT4QfZRNDChO1HOuUa9iqu0Q0Udobu8Ye4SWffPtVN1GsWw3j1/CLrf5y2vabWw==",
+          "shasum": "b9931dd8033aabb984b4e68dd7e5039a70e68f8c"
         },
         "protocolContracts": {
           "package": "@aztec/protocol-contracts",
-          "url": "https://registry.npmjs.org/@aztec/protocol-contracts/-/protocol-contracts-5.0.0-nightly.20260707.tgz",
-          "hash": "sha512-1FHtArMTN7He2zicrkqQPm3aQ5uOK+JmHxO94xgCnMPrjRmhuHcJ6T5O+5OJr1jlfZ0HZQ8/k5mGAl5F4zS6Ng==",
-          "shasum": "b2eaba7ab0ef58294ec3937f8f93d8f3236d2b0f"
+          "url": "https://registry.npmjs.org/@aztec/protocol-contracts/-/protocol-contracts-5.0.0-nightly.20260709.tgz",
+          "hash": "sha512-klERaAqcuHYCkcieN6V4vYUzLJjlIVNWAV8JeByJR4QgrXcZVDn4loz/dcdwHygn0qEBVmzOAs5i+GFsqAr1Jg==",
+          "shasum": "d183278f3968c14be166be581567d8c8b4f46cf9"
         },
         "l1Artifacts": {
           "package": "@aztec/l1-artifacts",
-          "url": "https://registry.npmjs.org/@aztec/l1-artifacts/-/l1-artifacts-5.0.0-nightly.20260707.tgz",
-          "hash": "sha512-T4mbAuLr+eYhB7T0YGpvxXIHvjjnL4Kxeb3aBJ5newK4VDRTOcogqnMuDdLwOaSwNukRAkrHP5tMUMMMAZ0oqg==",
-          "shasum": "d3bd415409d2907b6d24e417c149ae7246222e16"
+          "url": "https://registry.npmjs.org/@aztec/l1-artifacts/-/l1-artifacts-5.0.0-nightly.20260709.tgz",
+          "hash": "sha512-5P77HESP7zizr0cnkQaPZy38JVUMMVRFV22aLgEriTl+/P7EtyCAc3X6ZIoKryQnR+pG0afcdwNCjA1AQVn6Ww==",
+          "shasum": "cbd4af4c5afec18dbb7bcdb53e0c13ee5388c16e"
         }
       },
-      "npmDepsHash": "sha256-YacS37MoRSZJmFKEFxtwZw1N1hZJdlEhlie0WtlDz4U="
+      "npmDepsHash": "sha256-2OVEJVCvS6jmlmxUFDFYlpzY7qjvmnbh6GzUsDdH4DU="
     }
   }
 }
