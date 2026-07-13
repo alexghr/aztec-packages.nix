@@ -1,5 +1,4 @@
 {
-  barretenberg,
   contracts,
   foundry,
   lib,
@@ -25,14 +24,13 @@ stdenvNoCC.mkDerivation {
     for cmd in \
       aztec \
       aztec-wallet \
+      aztec-bb \
       aztec-bb-cli \
       aztec-blob-client \
       aztec-noir-codegen \
       aztec-txe; do
       ln -s ${node-runtime}/bin/$cmd $out/bin/$cmd
     done
-
-    ln -s ${barretenberg}/bin/bb $out/bin/aztec-bb
 
     ln -s ${noir}/bin/nargo $out/bin/aztec-nargo
 
@@ -45,9 +43,11 @@ stdenvNoCC.mkDerivation {
     fi
 
     for cmd in forge cast anvil chisel; do
-      if [ -x ${foundry}/bin/$cmd ]; then
-        ln -s ${foundry}/bin/$cmd $out/bin/aztec-$cmd
+      if [ ! -x ${foundry}/bin/$cmd ]; then
+        echo "Aztec Foundry dependency missing required binary: $cmd" >&2
+        exit 1
       fi
+      ln -s ${foundry}/bin/$cmd $out/bin/aztec-$cmd
     done
 
     runHook postInstall

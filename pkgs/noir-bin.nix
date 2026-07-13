@@ -59,7 +59,7 @@ in
       installNoirBin noir-profiler
       installNoirBin noir-inspector
 
-      for required in nargo acvm; do
+      for required in nargo noir-profiler; do
         if [ ! -x "$out/bin/$required" ]; then
           echo "Noir artifact did not contain required binary: $required" >&2
           exit 1
@@ -82,8 +82,8 @@ in
     '';
 
     meta = {
-      description = "Aztec forked Noir binaries";
-      homepage = "https://github.com/AztecProtocol/aztec-packages/tree/master/noir";
+      description = "Noir binaries pinned by the Aztec installer";
+      homepage = "https://github.com/AztecProtocol/aztec-packages/tree/next/aztec-up";
       license = lib.licenses.asl20;
       mainProgram = "nargo";
       platforms = [

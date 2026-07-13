@@ -29,7 +29,6 @@
         releaseSupportsSystem = release:
           release ? systems
           && builtins.hasAttr system release.systems
-          && release.systems.${system} ? barretenberg
           && release.systems.${system} ? foundry
           && release.systems.${system} ? noir;
 
@@ -80,7 +79,7 @@
             in {
               "${channel}" = release.aztec-bin;
               "${channel}-aztec-bin" = release.aztec-bin;
-              "${channel}-bb" = release.barretenberg;
+              "${channel}-bb" = release.aztec-bin;
               "${channel}-contracts" = release.contracts;
               "${channel}-foundry" = release.foundry;
               "${channel}-noir" = release.noir;
@@ -163,7 +162,6 @@
               release = releases.${metadata.tag};
             in {
               "${channel}" = mkApp "Run the Aztec CLI for ${channel}" "${release.aztec-bin}/bin/aztec";
-              "${channel}-acvm" = mkApp "Run ACVM for ${channel}" "${release.noir}/bin/acvm";
               "${channel}-aztec" = mkApp "Run the Aztec CLI for ${channel}" "${release.aztec-bin}/bin/aztec";
               "${channel}-aztec-anvil" = mkApp "Run Aztec-bundled Anvil for ${channel}" "${release.aztec-bin}/bin/aztec-anvil";
               "${channel}-aztec-bb" = mkApp "Run Aztec-bundled Barretenberg for ${channel}" "${release.aztec-bin}/bin/aztec-bb";
@@ -172,7 +170,7 @@
               "${channel}-aztec-forge" = mkApp "Run Aztec-bundled Forge for ${channel}" "${release.aztec-bin}/bin/aztec-forge";
               "${channel}-aztec-nargo" = mkApp "Run Aztec-bundled Noir nargo for ${channel}" "${release.aztec-bin}/bin/aztec-nargo";
               "${channel}-aztec-wallet" = mkApp "Run the Aztec wallet CLI for ${channel}" "${release.aztec-bin}/bin/aztec-wallet";
-              "${channel}-bb" = mkApp "Run Barretenberg for ${channel}" "${release.barretenberg}/bin/bb";
+              "${channel}-bb" = mkApp "Run Aztec-bundled Barretenberg for ${channel}" "${release.aztec-bin}/bin/aztec-bb";
               "${channel}-nargo" = mkApp "Run Noir nargo for ${channel}" "${release.noir}/bin/nargo";
             }
           )
@@ -197,14 +195,12 @@
 
             SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
             AZTEC_CONTRACTS_DIR = "${release.aztec-bin}/share/aztec/contracts";
-            BB = "${release.barretenberg}/bin/bb";
-            BB_BINARY_PATH = "${release.barretenberg}/bin/bb";
-            ACVM_BINARY_PATH = "${release.noir}/bin/acvm";
+            BB = "${release.aztec-bin}/bin/aztec-bb";
+            BB_BINARY_PATH = "${release.aztec-bin}/bin/aztec-bb";
 
             shellHook =
               ''
                 export BB_WORKING_DIRECTORY="''${BB_WORKING_DIRECTORY:-''${TMPDIR:-/tmp}/aztec-bb}"
-                export ACVM_WORKING_DIRECTORY="''${ACVM_WORKING_DIRECTORY:-''${TMPDIR:-/tmp}/aztec-acvm}"
               ''
               # on v4 we need to patch bb.js since it does not read BB_BINARY_PATH
               + lib.optionalString isV4Channel ''
@@ -212,7 +208,7 @@
                   local bb_js_dir="node_modules/@aztec/bb.js/build/${bbJsPlatform.${system}}"
 
                   if [ -d "$bb_js_dir" ]; then
-                    ln -sfn "${release.barretenberg}/bin/bb" "$bb_js_dir/bb"
+                    ln -sfn "${release.aztec-bin}/bin/aztec-bb" "$bb_js_dir/bb"
                   fi
                 }
 
@@ -270,7 +266,7 @@
             lib.optionalAttrs hasDefault {
               default = latest.aztec-bin;
               aztec-bin = latest.aztec-bin;
-              aztec-bb = latest.barretenberg;
+              aztec-bb = latest.aztec-bin;
               aztec-contracts = latest.contracts;
               aztec-foundry = latest.foundry;
               aztec-noir = latest.noir;
@@ -287,7 +283,6 @@
           (
             lib.optionalAttrs hasDefault {
               default = config.apps.aztec;
-              acvm = mkApp "Run ACVM" "${config.packages.aztec-noir}/bin/acvm";
               aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
               aztec-anvil = mkApp "Run Aztec-bundled Anvil" "${config.packages.aztec-bin}/bin/aztec-anvil";
               aztec-bb = mkApp "Run Aztec-bundled Barretenberg" "${config.packages.aztec-bin}/bin/aztec-bb";
@@ -296,7 +291,7 @@
               aztec-forge = mkApp "Run Aztec-bundled Forge" "${config.packages.aztec-bin}/bin/aztec-forge";
               aztec-nargo = mkApp "Run Aztec-bundled Noir nargo" "${config.packages.aztec-bin}/bin/aztec-nargo";
               aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
-              bb = mkApp "Run Barretenberg" "${config.packages.aztec-bb}/bin/bb";
+              bb = mkApp "Run Aztec-bundled Barretenberg" "${config.packages.aztec-bin}/bin/aztec-bb";
               e2e = mkApp "Run all Aztec local-network E2E suites" (lib.getExe config.packages.e2e);
               getting-started-e2e = mkApp "Run the Aztec getting-started local-network E2E" (lib.getExe config.packages.getting-started-e2e);
               nargo = mkApp "Run Noir nargo" "${config.packages.aztec-noir}/bin/nargo";

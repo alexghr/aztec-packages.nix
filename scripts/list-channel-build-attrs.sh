@@ -47,8 +47,7 @@ while IFS= read -r channel_json; do
   fi
 
   if ! jq -e --arg tag "$tag" --arg system "$system" '
-    .releases[$tag].systems[$system].barretenberg?
-    and .releases[$tag].systems[$system].foundry?
+    .releases[$tag].systems[$system].foundry?
     and .releases[$tag].systems[$system].noir?
   ' "$versions_json" >/dev/null; then
     echo "channel $channel release $tag is incomplete for $system" >&2
