@@ -3,6 +3,7 @@ set -euo pipefail
 
 channel=${1:-v5-stable}
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
+task_limit=
 
 fail() {
   echo "dev-shell smoke test failed: $*" >&2
@@ -24,14 +25,10 @@ assert_executable() {
   fi
 }
 
-run_bounded() {
-  local duration=$1
-  shift
-
+init_task_guard() {
   local uid
   local current_tasks
   local task_headroom=${AZTEC_DEV_SHELL_TASK_HEADROOM:-256}
-  local task_limit
   local hard_limit
 
   case "$task_headroom" in
@@ -56,6 +53,16 @@ run_bounded() {
   fi
 
   echo "task guard: current=$current_tasks limit=$task_limit"
+}
+
+run_bounded() {
+  local duration=$1
+  shift
+
+  if [ -z "$task_limit" ]; then
+    fail "task guard was not initialized"
+  fi
+
   (
     ulimit -u "$task_limit"
     timeout --kill-after=15s "$duration" "$@"
@@ -66,7 +73,7 @@ if [ -z "${IN_NIX_SHELL:-}" ]; then
   fail "run this test through nix develop"
 fi
 
-for command_name in awk aztec aztec-bb id jq nargo node npm ps python3 readlink timeout; do
+for command_name in awk aztec aztec-bb id jq nargo nc node npm ps python3 readlink timeout; do
   require_command "$command_name"
 done
 
@@ -83,6 +90,8 @@ fi
 
 : "${BB:?dev shell did not set BB}"
 : "${BB_BINARY_PATH:?dev shell did not set BB_BINARY_PATH}"
+: "${ANVIL_BIN:?dev shell did not set ANVIL_BIN}"
+: "${FORGE_BIN:?dev shell did not set FORGE_BIN}"
 : "${NARGO:?dev shell did not set NARGO}"
 
 bb=$(readlink -f -- "$BB")
@@ -97,6 +106,8 @@ fi
 
 assert_executable BB "$bb"
 assert_executable BB_BINARY_PATH "$bb_binary_path"
+assert_executable ANVIL_BIN "$ANVIL_BIN"
+assert_executable FORGE_BIN "$FORGE_BIN"
 
 if [ ! -x "$NARGO" ]; then
   fail "NARGO is not executable: $NARGO"
@@ -117,6 +128,7 @@ echo "bb: $bb"
 echo "bb binary path: $bb_binary_path"
 nargo --version
 python3 --version
+init_task_guard
 
 # Reject the known BB_BINARY_PATH self-reference before invoking the launcher,
 # then contain any other process-spawning regression with a temporary per-user
