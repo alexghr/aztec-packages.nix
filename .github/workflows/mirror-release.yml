@@ -171,6 +171,9 @@ jobs:
           )
           nix build -L --no-link --system "${{ matrix.system }}" "${channel_attrs[@]}"
 
+      - name: test v5-stable development shell
+        run: nix develop .#v5-stable --command scripts/dev-shell-smoke-test.sh v5-stable
+
       - name: run end-to-end tests
         if: matrix.system == 'x86_64-linux'
         run: AZTEC_READY_TIMEOUT=240 nix run -L --system "${{ matrix.system }}" .#e2e

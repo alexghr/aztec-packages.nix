@@ -184,19 +184,24 @@
 
         mkDevShell = channel: release: let
           isV4Channel = lib.hasPrefix "v4-" channel;
+          bbBinary = "${release.node-runtime-unwrapped}/lib/aztec/node/node_modules/@aztec/bb.js/build/${bbJsPlatform.${system}}/bb";
         in
           pkgs.mkShell {
             packages = [
               release.aztec-bin
+              release.noir
               pkgs.corepack
               pkgs.jq
               pkgs.nodejs_24
+              pkgs.procps
+              pkgs.python3
             ];
 
             SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
             AZTEC_CONTRACTS_DIR = "${release.aztec-bin}/share/aztec/contracts";
-            BB = "${release.aztec-bin}/bin/aztec-bb";
-            BB_BINARY_PATH = "${release.aztec-bin}/bin/aztec-bb";
+            BB = bbBinary;
+            BB_BINARY_PATH = bbBinary;
+            NARGO = "${release.noir}/bin/nargo";
 
             shellHook =
               ''
@@ -208,7 +213,7 @@
                   local bb_js_dir="node_modules/@aztec/bb.js/build/${bbJsPlatform.${system}}"
 
                   if [ -d "$bb_js_dir" ]; then
-                    ln -sfn "${release.aztec-bin}/bin/aztec-bb" "$bb_js_dir/bb"
+                    ln -sfn "${bbBinary}" "$bb_js_dir/bb"
                   fi
                 }
 
