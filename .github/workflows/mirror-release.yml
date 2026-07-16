@@ -18,7 +18,7 @@ on:
     - cron: "0 8 * * *"
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: mirror-aztec-release
@@ -29,6 +29,7 @@ jobs:
     name: prepare mirror update
     runs-on: ubuntu-24.04
     outputs:
+      base_sha: ${{ steps.base.outputs.sha }}
       changed: ${{ steps.changes.outputs.changed }}
     env:
       CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
@@ -39,6 +40,10 @@ jobs:
         with:
           fetch-depth: 0
           ref: main
+
+      - name: record mirror base revision
+        id: base
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: install nix
         uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
@@ -129,7 +134,8 @@ jobs:
       - name: check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
-          ref: main
+          ref: ${{ needs.mirror.outputs.base_sha }}
+          persist-credentials: false
 
       - name: download mirror update
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
@@ -178,19 +184,82 @@ jobs:
         if: matrix.system == 'x86_64-linux'
         run: AZTEC_READY_TIMEOUT=240 nix run -L --system "${{ matrix.system }}" .#e2e
 
+  validate-private-voting:
+    name: validate private voting canary
+    needs: mirror
+    if: needs.mirror.outputs.changed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CACHIX_CACHE_NAME: ${{ vars.CACHIX_CACHE_NAME || 'alexghr' }}
+    steps:
+      - name: check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ needs.mirror.outputs.base_sha }}
+          persist-credentials: false
+
+      - name: download mirror update
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: mirror-update
+
+      - name: apply mirror update
+        run: git apply --index mirror-update.patch
+
+      - name: read private voting canary ref
+        id: private_voting_ref
+        run: |
+          set -euo pipefail
+
+          ref=$(tr -d '\r\n' < e2e/private-voting.ref)
+          if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "invalid private voting canary ref: $ref" >&2
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: check out private voting canary
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: aztec-labs-eng/aztec-private-voting
+          ref: ${{ steps.private_voting_ref.outputs.ref }}
+          path: .e2e/aztec-private-voting
+          persist-credentials: false
+
+      - name: install nix
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: configure cachix pull only
+        uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17.0.0
+        with:
+          name: ${{ env.CACHIX_CACHE_NAME }}
+          skipPush: true
+
+      - name: test v5-stable with private voting
+        run: |
+          nix develop .#v5-stable --command \
+            scripts/private-voting-e2e.sh .e2e/aztec-private-voting v5-stable
+
   commit:
     name: commit and push mirror update
     needs:
       - mirror
       - validate
+      - validate-private-voting
     if: needs.mirror.outputs.changed == 'true'
     runs-on: ubuntu-24.04
+    permissions:
+      contents: write
     steps:
       - name: check out repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-          ref: main
+          ref: ${{ needs.mirror.outputs.base_sha }}
 
       - name: download mirror update
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1

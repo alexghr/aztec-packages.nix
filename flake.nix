@@ -192,6 +192,7 @@
               release.noir
               pkgs.corepack
               pkgs.jq
+              pkgs.netcat-openbsd
               pkgs.nodejs_24
               pkgs.procps
               pkgs.python3
@@ -199,8 +200,10 @@
 
             SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
             AZTEC_CONTRACTS_DIR = "${release.aztec-bin}/share/aztec/contracts";
+            ANVIL_BIN = "${release.foundry}/bin/anvil";
             BB = bbBinary;
             BB_BINARY_PATH = bbBinary;
+            FORGE_BIN = "${release.foundry}/bin/forge";
             NARGO = "${release.noir}/bin/nargo";
 
             shellHook =

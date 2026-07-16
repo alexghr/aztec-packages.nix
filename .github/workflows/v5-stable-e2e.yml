@@ -1,0 +1,65 @@
+name: v5-stable downstream e2e
+
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: v5-stable-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  private-voting:
+    name: private voting
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      CACHIX_CACHE_NAME: ${{ vars.CACHIX_CACHE_NAME || 'alexghr' }}
+    steps:
+      - name: check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: read private voting canary ref
+        id: private_voting_ref
+        run: |
+          set -euo pipefail
+
+          ref=$(tr -d '\r\n' < e2e/private-voting.ref)
+          if [[ ! "$ref" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "invalid private voting canary ref: $ref" >&2
+            exit 1
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: check out private voting canary
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: aztec-labs-eng/aztec-private-voting
+          ref: ${{ steps.private_voting_ref.outputs.ref }}
+          path: .e2e/aztec-private-voting
+          persist-credentials: false
+
+      - name: install nix
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: configure cachix pull only
+        uses: cachix/cachix-action@5f2d7c5294214f71b873db4b969586b980625e71 # v17.0.0
+        with:
+          name: ${{ env.CACHIX_CACHE_NAME }}
+          skipPush: true
+
+      - name: build and test private voting with v5-stable
+        run: |
+          nix develop .#v5-stable --command \
+            scripts/private-voting-e2e.sh .e2e/aztec-private-voting v5-stable

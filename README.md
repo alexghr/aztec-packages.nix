@@ -19,7 +19,10 @@ nix develop github:alexghr/aztec-packages.nix
 
 The default shell follows `v4-stable` and includes the Aztec CLI,
 Aztec-bundled native tools (`aztec-nargo`, `aztec-bb`, `aztec-forge`,
-`aztec-cast`, `aztec-anvil`, `aztec-chisel`), Node.js 24, Corepack, and `jq`.
+`aztec-cast`, `aztec-anvil`, `aztec-chisel`), Node.js 24, Corepack, `jq`, and
+netcat.
+It also exports `ANVIL_BIN` and `FORGE_BIN` for Aztec's JavaScript testing
+helpers.
 
 Channel-specific shells are also available:
 
