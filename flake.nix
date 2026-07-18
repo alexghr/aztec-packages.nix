@@ -25,6 +25,20 @@
         ...
       }: let
         versions = builtins.fromJSON (builtins.readFile ./versions.json);
+        channelDefinitions = builtins.fromJSON (builtins.readFile ./channels.json);
+        resolvedChannels = versions.channels or {};
+        configuredChannels =
+          lib.mapAttrs (
+            channel: definition:
+              definition
+              // lib.optionalAttrs (
+                builtins.hasAttr channel resolvedChannels
+                && resolvedChannels.${channel} ? tag
+              ) {
+                tag = resolvedChannels.${channel}.tag;
+              }
+          )
+          channelDefinitions;
 
         releaseSupportsSystem = release:
           release ? systems
@@ -47,10 +61,9 @@
         releases = lib.mapAttrs mkRelease supportedReleaseDefs;
         defaultTag =
           if
-            versions ? channels
-            && builtins.hasAttr defaultChannel versions.channels
-            && versions.channels.${defaultChannel} ? tag
-          then versions.channels.${defaultChannel}.tag
+            builtins.hasAttr defaultChannel configuredChannels
+            && configuredChannels.${defaultChannel} ? tag
+          then configuredChannels.${defaultChannel}.tag
           else versions.latest;
         hasDefault = builtins.hasAttr defaultTag releases;
         latest =
@@ -62,7 +75,7 @@
             _: channel:
               channel ? tag && builtins.hasAttr channel.tag releases
           )
-          (versions.channels or {});
+          configuredChannels;
         channelTestEnabled = testName: channel:
           ! (
             channel ? tests
@@ -155,6 +168,17 @@
           mirroredChannels;
 
         allE2EPackage = mkE2ESuite "aztec-e2e" (lib.attrValues channelE2EPackages);
+
+        channelConfigCheck =
+          pkgs.runCommand "aztec-channel-config" {
+            nativeBuildInputs = [
+              pkgs.gnugrep
+              pkgs.jq
+            ];
+          } ''
+            ${pkgs.bash}/bin/bash ${./scripts/check-channels.sh} ${./channels.json} ${./versions.json}
+            touch $out
+          '';
 
         channelApps =
           lib.concatMapAttrs (
@@ -310,12 +334,16 @@
           // channelCounterContractE2EApps
           // channelE2EApps;
 
-        checks = lib.optionalAttrs (hasDefault && system == "x86_64-linux") {
-          smoke = pkgs.runCommand "aztec-bin-smoke" {} ''
-            ${pkgs.bash}/bin/bash ${./scripts/smoke-test.sh} ${config.packages.aztec-bin}
-            touch $out
-          '';
-        };
+        checks =
+          {
+            channel-config = channelConfigCheck;
+          }
+          // lib.optionalAttrs (hasDefault && system == "x86_64-linux") {
+            smoke = pkgs.runCommand "aztec-bin-smoke" {} ''
+              ${pkgs.bash}/bin/bash ${./scripts/smoke-test.sh} ${config.packages.aztec-bin}
+              touch $out
+            '';
+          };
 
         devShells =
           (
@@ -330,6 +358,7 @@
                 pkgs.coreutils
                 pkgs.curl
                 pkgs.git
+                pkgs.gnugrep
                 pkgs.jq
                 pkgs.nodejs_24
               ];

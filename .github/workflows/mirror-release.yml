@@ -30,7 +30,9 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       base_sha: ${{ steps.base.outputs.sha }}
-      changed: ${{ steps.changes.outputs.changed }}
+      changed: ${{ steps.mirror.outputs.changed }}
+      has_failures: ${{ steps.mirror.outputs.has_failures }}
+      failed_channels: ${{ steps.mirror.outputs.failed_channels }}
     env:
       CACHIX_AUTH_TOKEN: ${{ secrets.CACHIX_AUTH_TOKEN }}
       CACHIX_CACHE_NAME: ${{ vars.CACHIX_CACHE_NAME || 'alexghr' }}
@@ -65,7 +67,8 @@ jobs:
           name: ${{ env.CACHIX_CACHE_NAME }}
           skipPush: true
 
-      - name: mirror release channels
+      - name: mirror release channels independently
+        id: mirror
         env:
           DISPATCH_CHANNEL: ${{ github.event.client_payload.channel || '' }}
           DISPATCH_TAG: ${{ github.event.client_payload.tag || github.event.client_payload.release.tag_name || '' }}
@@ -74,39 +77,176 @@ jobs:
         run: |
           set -euo pipefail
 
-          args=()
           channel="${INPUT_CHANNEL:-$DISPATCH_CHANNEL}"
           tag="${INPUT_TAG:-$DISPATCH_TAG}"
-          if [ -n "$channel" ]; then
-            args+=(--channel "$channel")
-          fi
+          normalized_tag=""
+
           if [ -n "$tag" ]; then
-            args+=(--tag "$tag")
+            case "$tag" in
+              v*) normalized_tag=$tag ;;
+              *) normalized_tag="v$tag" ;;
+            esac
           fi
 
-          nix develop .#mirror --command scripts/mirror-channels.sh "${args[@]}"
+          nix develop .#mirror --command \
+            scripts/check-channels.sh --allow-missing-releases
 
-      - name: detect changes
-        id: changes
-        run: |
-          set -euo pipefail
+          mapfile -t configured_channels < <(jq -r 'keys[]' channels.json)
+          selected_channels=()
 
-          if git diff --quiet HEAD -- versions.json node-runtime; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
+          if [ -n "$channel" ]; then
+            if ! jq -e --arg channel "$channel" 'has($channel)' channels.json >/dev/null; then
+              echo "unknown release channel: $channel" >&2
+              exit 1
+            fi
+
+            if [ -n "$normalized_tag" ]; then
+              pattern=$(jq -r --arg channel "$channel" '.[$channel].pattern' channels.json)
+              if ! printf "%s\n" "$normalized_tag" | grep -Eq -- "$pattern"; then
+                echo "tag $normalized_tag does not match channel $channel pattern: $pattern" >&2
+                exit 1
+              fi
+            fi
+
+            selected_channels+=("$channel")
+          elif [ -n "$tag" ]; then
+            for configured_channel in "${configured_channels[@]}"; do
+              pattern=$(jq -r --arg channel "$configured_channel" '.[$channel].pattern' channels.json)
+              if printf "%s\n" "$normalized_tag" | grep -Eq -- "$pattern"; then
+                selected_channels+=("$configured_channel")
+              fi
+            done
           else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
+            selected_channels=("${configured_channels[@]}")
           fi
 
-      - name: format
-        if: steps.changes.outputs.changed == 'true'
-        run: nix fmt
+          if [ "${#selected_channels[@]}" -eq 0 ]; then
+            echo "no configured channel matched tag $tag"
+          fi
 
-      - name: create mirror update patch
-        if: steps.changes.outputs.changed == 'true'
-        run: git diff --binary HEAD -- versions.json node-runtime > mirror-update.patch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          base=$(git rev-parse HEAD)
+          aggregate=$base
+          run_id=${GITHUB_RUN_ID:-$$}
+          run_attempt=${GITHUB_RUN_ATTEMPT:-1}
+          aggregate_ref="refs/mirror/aggregate-$run_id-$run_attempt"
+          worktree_root=$(mktemp -d)
+          active_worktree=""
+          failures=()
+          results=()
+
+          cleanup() {
+            status=$?
+            trap - EXIT
+            set +e
+            if [ -n "$active_worktree" ]; then
+              git worktree remove --force "$active_worktree" >/dev/null 2>&1 || true
+            fi
+            git update-ref -d "$aggregate_ref" >/dev/null 2>&1 || true
+            rm -rf -- "$worktree_root"
+            git worktree prune
+            exit "$status"
+          }
+          trap cleanup EXIT
+          git update-ref "$aggregate_ref" "$base"
+
+          for selected_channel in "${selected_channels[@]}"; do
+            if [[ ! "$selected_channel" =~ ^[A-Za-z0-9][A-Za-z0-9_-]*$ ]]; then
+              echo "unsafe release channel name: $selected_channel" >&2
+              exit 1
+            fi
+
+            echo "::group::mirror $selected_channel"
+            active_worktree="$worktree_root/$selected_channel"
+            channel_log="$RUNNER_TEMP/mirror-$selected_channel.log"
+            git worktree add --quiet --detach "$active_worktree" "$aggregate"
+
+            args=(--channel "$selected_channel")
+            if [ -n "$tag" ]; then
+              args+=(--tag "$tag")
+            fi
+
+            if (
+              cd "$active_worktree"
+              nix develop .#mirror --command scripts/mirror-channels.sh "${args[@]}"
+            ) 2>&1 | tee "$channel_log"; then
+              git -C "$active_worktree" add -A -- versions.json node-runtime
+              if git -C "$active_worktree" diff --cached --quiet -- versions.json node-runtime; then
+                echo "$selected_channel is already up to date"
+                results+=("$selected_channel: unchanged")
+              else
+                git -C "$active_worktree" commit --quiet --no-gpg-sign -m "chore: mirror $selected_channel"
+                next=$(git -C "$active_worktree" rev-parse HEAD)
+                git update-ref "$aggregate_ref" "$next" "$aggregate"
+                aggregate=$next
+                echo "mirrored $selected_channel"
+                results+=("$selected_channel: updated")
+              fi
+            else
+              failures+=("$selected_channel")
+              results+=("$selected_channel: deferred")
+              echo "::warning title=Deferred release channel::$selected_channel failed to mirror and will retry on the next sync"
+              {
+                echo "### Deferred channel: \`$selected_channel\`"
+                echo
+                echo '```text'
+                tail -n 20 "$channel_log"
+                echo '```'
+              } >> "$GITHUB_STEP_SUMMARY"
+            fi
+
+            git worktree remove --force "$active_worktree"
+            active_worktree=""
+            echo "::endgroup::"
+          done
+
+          diff_status=0
+          git diff --quiet "$base" "$aggregate" -- versions.json node-runtime || diff_status=$?
+          case "$diff_status" in
+            0)
+              changed=false
+              ;;
+            1)
+              changed=true
+              git diff --binary --full-index "$base" "$aggregate" \
+                -- versions.json node-runtime > mirror-update.patch
+              ;;
+            *)
+              echo "failed to compare aggregate mirror update (git diff status $diff_status)" >&2
+              exit "$diff_status"
+              ;;
+          esac
+
+          failed_channels=$(IFS=,; echo "${failures[*]}")
+          if [ "${#failures[@]}" -eq 0 ]; then
+            has_failures=false
+          else
+            has_failures=true
+          fi
+          {
+            echo "changed=$changed"
+            echo "has_failures=$has_failures"
+            echo "failed_channels=$failed_channels"
+          } >> "$GITHUB_OUTPUT"
+
+          {
+            echo "### Channel mirror summary"
+            echo
+            echo "- Generated update: \`$changed\`"
+            echo "- Deferred channels: \`${failed_channels:-none}\`"
+            if [ "${#results[@]}" -eq 0 ]; then
+              echo "- No configured channel selected"
+            else
+              for result in "${results[@]}"; do
+                echo "- \`$result\`"
+              done
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: upload mirror update
-        if: steps.changes.outputs.changed == 'true'
+        if: steps.mirror.outputs.changed == 'true'
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: mirror-update
@@ -276,11 +416,33 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          git add versions.json node-runtime
+          git add -A -- versions.json node-runtime
           if git diff --cached --quiet; then
             echo "no mirror update to commit"
             exit 0
           fi
 
-          git commit -m "chore: mirror aztec release channels"
+          git commit --no-gpg-sign -m "chore: mirror aztec release channels"
           git push origin HEAD:main
+
+  report-failures:
+    name: report deferred release channels
+    needs:
+      - mirror
+      - validate
+      - validate-private-voting
+      - commit
+    if: >-
+      ${{
+        always() &&
+        needs.mirror.result == 'success' &&
+        needs.mirror.outputs.has_failures == 'true'
+      }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: report deferred release channels
+        env:
+          FAILED_CHANNELS: ${{ needs.mirror.outputs.failed_channels }}
+        run: |
+          echo "::error title=Deferred release channels::$FAILED_CHANNELS failed to mirror and will retry on the next sync"
+          exit 1

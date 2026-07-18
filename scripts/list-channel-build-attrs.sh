@@ -5,9 +5,10 @@ usage() {
   cat <<'EOF'
 Usage: scripts/list-channel-build-attrs.sh <system>
 
-Prints flake package refs for every mirrored release channel in versions.json.
-Channels without a tag are skipped. Channels with a tag must have a matching
-release manifest and complete artifacts for the requested system.
+Prints flake package refs for every release channel configured in channels.json
+and resolved in versions.json. Channels without a resolved tag are skipped.
+Resolved channels must have a matching release manifest and complete artifacts
+for the requested system.
 EOF
 }
 
@@ -17,6 +18,7 @@ if [ "$#" -ne 1 ]; then
 fi
 
 system=$1
+channels_json="channels.json"
 versions_json="versions.json"
 
 if ! command -v jq >/dev/null 2>&1; then
@@ -29,12 +31,19 @@ if [ ! -f "$versions_json" ]; then
   exit 1
 fi
 
+if [ ! -f "$channels_json" ]; then
+  echo "channel definitions not found: $channels_json" >&2
+  exit 1
+fi
+
+scripts/check-channels.sh "$channels_json" "$versions_json" >/dev/null
+
 build_count=0
 invalid=0
 
 while IFS= read -r channel_json; do
   channel=$(printf "%s" "$channel_json" | jq -r '.key')
-  tag=$(printf "%s" "$channel_json" | jq -r '.value.tag // ""')
+  tag=$(jq -r --arg channel "$channel" '.channels[$channel].tag // ""' "$versions_json")
 
   if [ -z "$tag" ] || [ "$tag" = "null" ]; then
     continue
@@ -57,7 +66,7 @@ while IFS= read -r channel_json; do
 
   printf ".#%s\n" "$channel"
   build_count=$((build_count + 1))
-done < <(jq -c '(.channels // {}) | to_entries[]' "$versions_json")
+done < <(jq -c 'to_entries[]' "$channels_json")
 
 if [ "$invalid" -ne 0 ]; then
   exit 1

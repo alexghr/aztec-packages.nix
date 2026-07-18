@@ -3,14 +3,14 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/update-release.sh <tag> [--dry-run] [--set-latest] [--set-channel NAME] [--versions-json PATH]
+Usage: scripts/update-release.sh <tag> [--dry-run] [--set-latest] [--set-channel NAME] [--channels-json PATH] [--versions-json PATH]
 
 Collects confirmed release metadata for an Aztec tag and merges it into
 versions.json by default. Use --dry-run to print the generated manifest fragment
 without writing. Existing latest values are preserved unless --set-latest is
-passed. Use --set-channel to update a named release channel pointer.
+passed. Use --set-channel to update a channel declared in channels.json.
 
-Required tools: curl, git, jq, nix.
+Required tools: curl, git, grep, jq, nix.
 EOF
 }
 
@@ -18,6 +18,7 @@ tag=""
 dry_run=0
 set_latest=0
 set_channel=""
+channels_json="channels.json"
 versions_json="versions.json"
 
 while [ "$#" -gt 0 ]; do
@@ -37,6 +38,14 @@ while [ "$#" -gt 0 ]; do
       set_channel=${1:-}
       if [ -z "$set_channel" ]; then
         echo "--set-channel requires a channel name" >&2
+        exit 2
+      fi
+      ;;
+    --channels-json)
+      shift
+      channels_json=${1:-}
+      if [ -z "$channels_json" ]; then
+        echo "--channels-json requires a path" >&2
         exit 2
       fi
       ;;
@@ -69,7 +78,7 @@ if [ -z "$tag" ]; then
   exit 2
 fi
 
-for tool in curl git jq nix; do
+for tool in curl git grep jq nix; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "required tool not found: $tool" >&2
     exit 1
@@ -94,6 +103,29 @@ die() {
   echo "$*" >&2
   exit 1
 }
+
+if [ -n "$set_channel" ]; then
+  if [ ! -f "$channels_json" ]; then
+    die "channel definitions not found: $channels_json"
+  fi
+  if ! jq -e --arg channel "$set_channel" '.[$channel] != null' "$channels_json" >/dev/null; then
+    die "unknown release channel: $set_channel"
+  fi
+
+  channel_pattern=$(jq -r --arg channel "$set_channel" '.[$channel].pattern // empty' "$channels_json")
+  if [ -z "$channel_pattern" ]; then
+    die "release channel has no tag pattern: $set_channel"
+  fi
+
+  pattern_status=0
+  printf "%s\n" "$tag" | grep -Eq -- "$channel_pattern" || pattern_status=$?
+  if [ "$pattern_status" -gt 1 ]; then
+    die "release channel has an invalid tag pattern: $set_channel"
+  fi
+  if [ "$pattern_status" -ne 0 ]; then
+    die "tag $tag does not match channel $set_channel pattern: $channel_pattern"
+  fi
+fi
 
 if ! git ls-remote --exit-code --tags "https://github.com/$aztec_repo.git" "refs/tags/$tag" >/dev/null; then
   echo "upstream tag not found in $aztec_repo: $tag" >&2
@@ -422,7 +454,7 @@ if [ -f "$versions_json" ]; then
         if $setChannel != ""
         then
           (.channels // {})
-          | .[$setChannel] = ((.[$setChannel] // {}) + { tag: $incoming.latest })
+          | .[$setChannel] = { tag: $incoming.latest }
         else .channels
         end
       )

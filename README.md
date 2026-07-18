@@ -81,10 +81,21 @@ For JavaScript libraries, keep using npm/pnpm/yarn in the consuming project:
 yarn add @aztec/aztec@4.3.0 @aztec/aztec.js@4.3.0
 ```
 
-Mirrored channels also get package and app aliases. The initial channels are:
+Mirrored channels also get package and app aliases. The configured channels are:
 
 ```text
 v4-stable  -> latest stable v4 release
 v5-stable  -> latest stable v5 release
-v5-nightly -> latest v5 nightly release
+v5-nightly -> latest v5.1.0 nightly release
 ```
+
+Add or change channels in `channels.json`. Each entry contains only the channel
+name, the upstream tag pattern to follow, and the tests to enable. The next 
+scheduled channel sync discovers the latest matching public release and records
+its tag, hashes, and package metadata there.
+
+The sync runs each channel in a disposable Git worktree. If one channel points
+at an incomplete or unavailable release, its changes are discarded and the
+remaining channels still run. Successful updates are validated and committed;
+the workflow then reports the deferred channels as a failure so they stay
+visible and are retried by the next sync.

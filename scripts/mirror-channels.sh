@@ -5,7 +5,8 @@ usage() {
   cat <<'EOF'
 Usage: scripts/mirror-channels.sh [--channel NAME] [--tag TAG]
 
-Mirrors release channels declared in versions.json.
+Mirrors release channels declared in channels.json. Resolved channel tags and
+release metadata are stored in versions.json.
 
 With --tag, mirrors that exact tag. If --channel is omitted, the tag is mirrored
 to every channel whose pattern matches it. Without --tag, resolves the latest
@@ -15,6 +16,7 @@ EOF
 
 channel=""
 tag=""
+channels_json="channels.json"
 versions_json="versions.json"
 aztec_repo_url="https://github.com/AztecProtocol/aztec-packages.git"
 
@@ -66,7 +68,17 @@ if [ ! -f "$versions_json" ]; then
   exit 1
 fi
 
-if [ -n "$channel" ] && ! jq -e --arg channel "$channel" '.channels[$channel] != null' "$versions_json" >/dev/null; then
+if [ ! -f "$channels_json" ]; then
+  echo "channel definitions not found: $channels_json" >&2
+  exit 1
+fi
+
+scripts/check-channels.sh \
+  --allow-missing-releases \
+  --channels "$channels_json" \
+  --versions "$versions_json"
+
+if [ -n "$channel" ] && ! jq -e --arg channel "$channel" '.[$channel] != null' "$channels_json" >/dev/null; then
   echo "unknown release channel: $channel" >&2
   exit 1
 fi
@@ -123,6 +135,19 @@ remove_release() {
     return
   fi
 
+  if jq -e --arg tag "$release_tag" --slurpfile configured "$channels_json" '
+    .latest == $tag
+    or any(
+      (.channels // {} | to_entries[]?);
+      . as $state
+      | $state.value.tag == $tag
+        and ($configured[0] | has($state.key))
+    )
+  ' "$versions_json" >/dev/null; then
+    echo "kept release $release_tag because it is still referenced"
+    return
+  fi
+
   node_runtime_path=$(jq -r --arg tag "$release_tag" '.releases[$tag].nodeRuntime.path // $tag' "$versions_json")
   next_versions=$(mktemp)
   jq --arg tag "$release_tag" '
@@ -168,17 +193,15 @@ if [ -n "$tag" ]; then
   done < <(
     if [ -n "$channel" ]; then
       jq -r --arg channel "$channel" '
-        .channels
-        | to_entries[]
+        to_entries[]
         | select(.key == $channel)
         | @json
-      ' "$versions_json"
+      ' "$channels_json"
     else
       jq -r '
-        .channels
-        | to_entries[]
+        to_entries[]
         | @json
-      ' "$versions_json"
+      ' "$channels_json"
     fi
   )
 
@@ -194,7 +217,7 @@ mirrored=0
 while IFS= read -r channel_json; do
   selected_channel=$(printf "%s" "$channel_json" | jq -r '.key')
   pattern=$(printf "%s" "$channel_json" | jq -r '.value.pattern // ""')
-  current_tag=$(printf "%s" "$channel_json" | jq -r '.value.tag // ""')
+  current_tag=$(jq -r --arg channel "$selected_channel" '.channels[$channel].tag // ""' "$versions_json")
 
   if [ -z "$pattern" ] || [ "$pattern" = "null" ]; then
     echo "channel $selected_channel has no pattern" >&2
@@ -217,17 +240,15 @@ while IFS= read -r channel_json; do
 done < <(
   if [ -n "$channel" ]; then
     jq -r --arg channel "$channel" '
-      .channels
-      | to_entries[]
+      to_entries[]
       | select(.key == $channel)
       | @json
-    ' "$versions_json"
+    ' "$channels_json"
   else
     jq -r '
-      .channels
-      | to_entries[]
+      to_entries[]
       | @json
-    ' "$versions_json"
+    ' "$channels_json"
   fi
 )
 
