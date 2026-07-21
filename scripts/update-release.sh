@@ -108,11 +108,11 @@ if [ -n "$set_channel" ]; then
   if [ ! -f "$channels_json" ]; then
     die "channel definitions not found: $channels_json"
   fi
-  if ! jq -e --arg channel "$set_channel" '.[$channel] != null' "$channels_json" >/dev/null; then
+  if ! jq -e --arg channel "$set_channel" '.channels[$channel] != null' "$channels_json" >/dev/null; then
     die "unknown release channel: $set_channel"
   fi
 
-  channel_pattern=$(jq -r --arg channel "$set_channel" '.[$channel].pattern // empty' "$channels_json")
+  channel_pattern=$(jq -r --arg channel "$set_channel" '.channels[$channel].pattern // empty' "$channels_json")
   if [ -z "$channel_pattern" ]; then
     die "release channel has no tag pattern: $set_channel"
   fi

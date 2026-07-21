@@ -38,7 +38,7 @@
                 tag = resolvedChannels.${channel}.tag;
               }
           )
-          channelDefinitions;
+          channelDefinitions.channels;
 
         releaseSupportsSystem = release:
           release ? systems
@@ -56,7 +56,7 @@
             inherit pkgs system tag release;
           };
 
-        defaultChannel = "v4-stable";
+        defaultChannel = channelDefinitions.defaultChannel;
         supportedReleaseDefs = lib.filterAttrs (_: release: releaseSupportsSystem release) versions.releases;
         releases = lib.mapAttrs mkRelease supportedReleaseDefs;
         defaultTag =

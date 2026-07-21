@@ -106,8 +106,13 @@ for json_file in "$channels_json" "$versions_json"; do
   fi
 done
 
-if ! jq -e 'type == "object"' "$channels_json" >/dev/null; then
-  echo "channel configuration must be a top-level JSON object: $channels_json" >&2
+if ! jq -e '
+  type == "object"
+  and (keys | sort) == ["channels", "defaultChannel"]
+  and (.defaultChannel | type == "string" and length > 0)
+  and (.channels | type == "object")
+' "$channels_json" >/dev/null; then
+  echo "channel configuration must contain exactly: defaultChannel, channels" >&2
   exit 1
 fi
 
@@ -238,7 +243,14 @@ while IFS= read -r channel_entry; do
       invalid=1
     fi
   done
-done < <(jq -c 'to_entries[]' "$channels_json")
+done < <(jq -c '.channels | to_entries[]' "$channels_json")
+
+default_channel=$(jq -r '.defaultChannel' "$channels_json")
+default_channel_label=$(jq -r '.defaultChannel | @json' "$channels_json")
+if ! jq -e --arg channel "$default_channel" '.channels | has($channel)' "$channels_json" >/dev/null; then
+  echo "default channel $default_channel_label is not configured" >&2
+  invalid=1
+fi
 
 while IFS= read -r state_entry; do
   channel=$(jq -r '.key' <<<"$state_entry")
@@ -269,7 +281,7 @@ while IFS= read -r state_entry; do
     continue
   fi
 
-  if ! jq -e --arg channel "$channel" 'has($channel)' "$channels_json" >/dev/null; then
+  if ! jq -e --arg channel "$channel" '.channels | has($channel)' "$channels_json" >/dev/null; then
     continue
   fi
 
@@ -290,6 +302,6 @@ if [ "$invalid" -ne 0 ]; then
   exit 1
 fi
 
-configured_count=$(jq 'length' "$channels_json")
+configured_count=$(jq '.channels | length' "$channels_json")
 state_count=$(jq '.channels | length' "$versions_json")
 echo "channel configuration is valid ($configured_count configured, $state_count state entries)"

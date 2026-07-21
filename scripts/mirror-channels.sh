@@ -78,7 +78,7 @@ scripts/check-channels.sh \
   --channels "$channels_json" \
   --versions "$versions_json"
 
-if [ -n "$channel" ] && ! jq -e --arg channel "$channel" '.[$channel] != null' "$channels_json" >/dev/null; then
+if [ -n "$channel" ] && ! jq -e --arg channel "$channel" '.channels[$channel] != null' "$channels_json" >/dev/null; then
   echo "unknown release channel: $channel" >&2
   exit 1
 fi
@@ -141,7 +141,7 @@ remove_release() {
       (.channels // {} | to_entries[]?);
       . as $state
       | $state.value.tag == $tag
-        and ($configured[0] | has($state.key))
+        and ($configured[0].channels | has($state.key))
     )
   ' "$versions_json" >/dev/null; then
     echo "kept release $release_tag because it is still referenced"
@@ -193,13 +193,13 @@ if [ -n "$tag" ]; then
   done < <(
     if [ -n "$channel" ]; then
       jq -r --arg channel "$channel" '
-        to_entries[]
+        .channels | to_entries[]
         | select(.key == $channel)
         | @json
       ' "$channels_json"
     else
       jq -r '
-        to_entries[]
+        .channels | to_entries[]
         | @json
       ' "$channels_json"
     fi
@@ -240,13 +240,13 @@ while IFS= read -r channel_json; do
 done < <(
   if [ -n "$channel" ]; then
     jq -r --arg channel "$channel" '
-      to_entries[]
+      .channels | to_entries[]
       | select(.key == $channel)
       | @json
     ' "$channels_json"
   else
     jq -r '
-      to_entries[]
+      .channels | to_entries[]
       | @json
     ' "$channels_json"
   fi

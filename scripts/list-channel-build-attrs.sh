@@ -66,7 +66,7 @@ while IFS= read -r channel_json; do
 
   printf ".#%s\n" "$channel"
   build_count=$((build_count + 1))
-done < <(jq -c 'to_entries[]' "$channels_json")
+done < <(jq -c '.channels | to_entries[]' "$channels_json")
 
 if [ "$invalid" -ne 0 ]; then
   exit 1

@@ -1,23 +1,26 @@
 {
-  "v4-stable": {
-    "pattern": "^v4\\.[0-9]+\\.[0-9]+$",
-    "tests": {
-      "gettingStarted": true,
-      "counterContract": false
-    }
-  },
-  "v5-nightly": {
-    "pattern": "^v5\\.1\\.0-nightly",
-    "tests": {
-      "gettingStarted": true,
-      "counterContract": true
-    }
-  },
-  "v5-stable": {
-    "pattern": "^v5\\.[0-9]+\\.[0-9]+$",
-    "tests": {
-      "gettingStarted": true,
-      "counterContract": true
+  "defaultChannel": "v5-stable",
+  "channels": {
+    "v4-stable": {
+      "pattern": "^v4\\.[0-9]+\\.[0-9]+$",
+      "tests": {
+        "gettingStarted": true,
+        "counterContract": false
+      }
+    },
+    "v5-nightly": {
+      "pattern": "^v5\\.1\\.0-nightly",
+      "tests": {
+        "gettingStarted": true,
+        "counterContract": true
+      }
+    },
+    "v5-stable": {
+      "pattern": "^v5\\.[0-9]+\\.[0-9]+$",
+      "tests": {
+        "gettingStarted": true,
+        "counterContract": true
+      }
     }
   }
 }

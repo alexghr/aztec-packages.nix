@@ -91,17 +91,17 @@ jobs:
           nix develop .#mirror --command \
             scripts/check-channels.sh --allow-missing-releases
 
-          mapfile -t configured_channels < <(jq -r 'keys[]' channels.json)
+          mapfile -t configured_channels < <(jq -r '.channels | keys[]' channels.json)
           selected_channels=()
 
           if [ -n "$channel" ]; then
-            if ! jq -e --arg channel "$channel" 'has($channel)' channels.json >/dev/null; then
+            if ! jq -e --arg channel "$channel" '.channels | has($channel)' channels.json >/dev/null; then
               echo "unknown release channel: $channel" >&2
               exit 1
             fi
 
             if [ -n "$normalized_tag" ]; then
-              pattern=$(jq -r --arg channel "$channel" '.[$channel].pattern' channels.json)
+              pattern=$(jq -r --arg channel "$channel" '.channels[$channel].pattern' channels.json)
               if ! printf "%s\n" "$normalized_tag" | grep -Eq -- "$pattern"; then
                 echo "tag $normalized_tag does not match channel $channel pattern: $pattern" >&2
                 exit 1
@@ -111,7 +111,7 @@ jobs:
             selected_channels+=("$channel")
           elif [ -n "$tag" ]; then
             for configured_channel in "${configured_channels[@]}"; do
-              pattern=$(jq -r --arg channel "$configured_channel" '.[$channel].pattern' channels.json)
+              pattern=$(jq -r --arg channel "$configured_channel" '.channels[$channel].pattern' channels.json)
               if printf "%s\n" "$normalized_tag" | grep -Eq -- "$pattern"; then
                 selected_channels+=("$configured_channel")
               fi
