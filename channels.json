@@ -21,6 +21,13 @@
         "gettingStarted": true,
         "counterContract": true
       }
+    },
+    "v6-nightly": {
+      "pattern": "^v6\\.0\\.0-nightly",
+      "tests": {
+        "gettingStarted": true,
+        "counterContract": true
+      }
     }
   }
 }
