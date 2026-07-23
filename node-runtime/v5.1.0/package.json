@@ -1,0 +1,11 @@
+{
+  "name": "aztec-node-runtime",
+  "version": "5.1.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@aztec/aztec": "5.1.0",
+    "@aztec/bb.js": "5.1.0",
+    "@aztec/cli-wallet": "5.1.0"
+  }
+}
