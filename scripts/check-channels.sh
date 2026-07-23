@@ -152,7 +152,7 @@ channel_name_is_valid() {
   fi
 
   case "$channel" in
-    default|mirror|aztec|aztec-anvil|aztec-bb|aztec-bin|aztec-cast|aztec-chisel|aztec-contracts|aztec-forge|aztec-foundry|aztec-nargo|aztec-noir|aztec-wallet|bb|e2e|getting-started-e2e|nargo)
+    default|mirror|aztec|aztec-anvil|aztec-bb|aztec-bin|aztec-cast|aztec-chisel|aztec-contracts|aztec-forge|aztec-foundry|aztec-nargo|aztec-noir|aztec-wallet|bb|e2e|getting-started-e2e|info|nargo)
       return 1
       ;;
   esac
@@ -194,13 +194,31 @@ while IFS= read -r channel_entry; do
   if ! jq -e '
     .value
     | if type == "object"
-      then (keys | sort) == ["pattern", "tests"]
+      then (keys | sort) == ["liveNetworks", "pattern", "releaseType", "tests"]
       else false
       end
   ' <<<"$channel_entry" >/dev/null; then
-    echo "channel $channel_label must contain exactly: pattern, tests" >&2
+    echo "channel $channel_label must contain exactly: liveNetworks, pattern, releaseType, tests" >&2
     invalid=1
     continue
+  fi
+
+  if ! jq -e '
+    .value.liveNetworks
+    | type == "array"
+      and all(.[]; . == "testnet" or . == "mainnet")
+      and (length == (unique | length))
+  ' <<<"$channel_entry" >/dev/null; then
+    echo "channel $channel_label liveNetworks must contain unique testnet/mainnet values" >&2
+    invalid=1
+  fi
+
+  if ! jq -e '
+    .value.releaseType
+    | . == "stable" or . == "nightly"
+  ' <<<"$channel_entry" >/dev/null; then
+    echo "channel $channel_label releaseType must be stable or nightly" >&2
+    invalid=1
   fi
 
   pattern_valid=1

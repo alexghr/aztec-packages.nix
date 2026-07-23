@@ -2,28 +2,36 @@
   "defaultChannel": "v5-stable",
   "channels": {
     "v4-stable": {
+      "liveNetworks": [],
       "pattern": "^v4\\.[0-9]+\\.[0-9]+$",
+      "releaseType": "stable",
       "tests": {
         "gettingStarted": true,
         "counterContract": false
       }
     },
     "v5-nightly": {
+      "liveNetworks": [],
       "pattern": "^v5\\.1\\.0-nightly",
+      "releaseType": "nightly",
       "tests": {
         "gettingStarted": true,
         "counterContract": true
       }
     },
     "v5-stable": {
+      "liveNetworks": ["testnet", "mainnet"],
       "pattern": "^v5\\.[0-9]+\\.[0-9]+$",
+      "releaseType": "stable",
       "tests": {
         "gettingStarted": true,
         "counterContract": true
       }
     },
     "v6-nightly": {
+      "liveNetworks": [],
       "pattern": "^v6\\.0\\.0-nightly",
+      "releaseType": "nightly",
       "tests": {
         "gettingStarted": true,
         "counterContract": true

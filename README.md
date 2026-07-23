@@ -78,6 +78,14 @@ Each channel comes with a development shell:
 nix develop github:alexghr/aztec-packages.nix#v5-stable
 ```
 
+## Inspect channel metadata
+
+Print the complete channel metadata as JSON:
+
+```bash
+nix run github:alexghr/aztec-packages.nix#info
+```
+
 ## Flake
 
 You can use this flake as an inputs in your own flake:
@@ -103,5 +111,11 @@ You can use this flake as an inputs in your own flake:
       };
     };
 }
+```
+
+Access channel metadata with `lib.channelInfo`:
+
+```bash
+nix eval --json github:alexghr/aztec-packages.nix#lib.channelInfo.channels.v5-stable
 ```
 

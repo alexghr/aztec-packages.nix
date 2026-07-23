@@ -10,8 +10,12 @@
     self,
     flake-parts,
     ...
-  }:
+  }: let
+    channelInfo = import ./lib/channel-info.nix {lib = inputs.nixpkgs.lib;};
+  in
     flake-parts.lib.mkFlake {inherit inputs;} {
+      flake.lib.channelInfo = channelInfo;
+
       systems = [
         "x86_64-linux"
         "aarch64-linux"
@@ -169,6 +173,16 @@
 
         allE2EPackage = mkE2ESuite "aztec-e2e" (lib.attrValues channelE2EPackages);
 
+        channelInfoJson = pkgs.writeText "aztec-channel-info.json" "${builtins.toJSON channelInfo}\n";
+
+        infoApp = pkgs.writeShellApplication {
+          name = "aztec-info";
+          runtimeInputs = [pkgs.coreutils];
+          text = ''
+            exec cat ${channelInfoJson}
+          '';
+        };
+
         channelConfigCheck =
           pkgs.runCommand "aztec-channel-config" {
             nativeBuildInputs = [
@@ -177,6 +191,33 @@
             ];
           } ''
             ${pkgs.bash}/bin/bash ${./scripts/check-channels.sh} ${./channels.json} ${./versions.json}
+            touch $out
+          '';
+
+        channelInfoCheck =
+          pkgs.runCommand "aztec-channel-info-check" {
+            nativeBuildInputs = [pkgs.jq];
+          } ''
+            ${lib.getExe infoApp} | jq -e '
+              .schemaVersion == 1
+              and (.defaultChannel as $default | .channels | has($default))
+              and (
+                .channels
+                | all(
+                    .[];
+                    (keys | sort) == [
+                      "aztecVersion",
+                      "foundryVersion",
+                      "liveNetworks",
+                      "noirVersion",
+                      "releaseType",
+                      "systems",
+                      "tag"
+                    ]
+                  )
+              )
+            ' >/dev/null
+
             touch $out
           '';
 
@@ -326,6 +367,7 @@
               bb = mkApp "Run Aztec-bundled Barretenberg" "${config.packages.aztec-bin}/bin/aztec-bb";
               e2e = mkApp "Run all Aztec local-network E2E suites" (lib.getExe config.packages.e2e);
               getting-started-e2e = mkApp "Run the Aztec getting-started local-network E2E" (lib.getExe config.packages.getting-started-e2e);
+              info = mkApp "Print all Aztec channel metadata as JSON" (lib.getExe infoApp);
               nargo = mkApp "Run Noir nargo" "${config.packages.aztec-noir}/bin/nargo";
             }
           )
@@ -337,6 +379,7 @@
         checks =
           {
             channel-config = channelConfigCheck;
+            channel-info = channelInfoCheck;
           }
           // lib.optionalAttrs (hasDefault && system == "x86_64-linux") {
             smoke = pkgs.runCommand "aztec-bin-smoke" {} ''
