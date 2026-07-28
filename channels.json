@@ -12,7 +12,7 @@
     },
     "v5-nightly": {
       "liveNetworks": [],
-      "pattern": "^v5\\.1\\.0-nightly",
+      "pattern": "^v5\\.[0-9]+\\.[0-9]+-nightly",
       "releaseType": "nightly",
       "tests": {
         "gettingStarted": true,
