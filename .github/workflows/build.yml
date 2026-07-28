@@ -15,6 +15,48 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test-channels:
+    name: discover test channels
+    runs-on: ubuntu-24.04
+    outputs:
+      channels: ${{ steps.channels.outputs.channels }}
+    steps:
+      - name: check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: install nix
+        uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: list resolved test channels
+        id: channels
+        run: |
+          set -euo pipefail
+
+          nix develop .#mirror --command \
+            scripts/check-channels.sh channels.json versions.json >/dev/null
+          # shellcheck disable=SC2016 # jq variables are intentionally single-quoted.
+          channels=$(
+            nix develop .#mirror --command jq -nc \
+              --slurpfile config channels.json \
+              --slurpfile state versions.json \
+              '[
+                $config[0].channels | keys[] as $channel
+                | $state[0].channels[$channel].tag as $tag
+                | select(
+                    ($tag | type) == "string"
+                    and ($state[0].releases[$tag].systems["x86_64-linux"].foundry? != null)
+                    and ($state[0].releases[$tag].systems["x86_64-linux"].noir? != null)
+                  )
+                | $channel
+              ]'
+          )
+          echo "channels=$channels" >> "$GITHUB_OUTPUT"
+
   build:
     name: build ${{ matrix.system }}
     runs-on: ${{ matrix.runner }}
@@ -68,6 +110,16 @@ jobs:
       - name: test v5-stable development shell
         run: nix develop .#v5-stable --command scripts/dev-shell-smoke-test.sh v5-stable
 
-      - name: run end-to-end tests
-        if: matrix.system == 'x86_64-linux'
-        run: AZTEC_READY_TIMEOUT=240 nix run -L --system "${{ matrix.system }}" .#e2e
+  e2e:
+    name: test ${{ matrix.channel }} (x86_64-linux)
+    needs: test-channels
+    strategy:
+      fail-fast: false
+      matrix:
+        channel: ${{ fromJSON(needs.test-channels.outputs.channels) }}
+    uses: ./.github/workflows/channel-e2e.yml
+    with:
+      channel: ${{ matrix.channel }}
+      cachix_cache_name: ${{ vars.CACHIX_CACHE_NAME || 'alexghr' }}
+    secrets:
+      cachix_auth_token: ${{ secrets.CACHIX_AUTH_TOKEN }}
