@@ -1,0 +1,11 @@
+{
+  "name": "aztec-node-runtime",
+  "version": "6.0.0-nightly.20260803",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@aztec/aztec": "6.0.0-nightly.20260803",
+    "@aztec/bb.js": "6.0.0-nightly.20260803",
+    "@aztec/cli-wallet": "6.0.0-nightly.20260803"
+  }
+}
