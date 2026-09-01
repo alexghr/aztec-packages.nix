@@ -249,7 +249,9 @@
 
         mkDevShell = channel: release: let
           isV4Channel = lib.hasPrefix "v4-" channel;
-          bbBinary = "${release.node-runtime-unwrapped}/lib/aztec/node/node_modules/@aztec/bb.js/build/${bbJsPlatform.${system}}/bb";
+          releaseDef = versions.releases.${configuredChannels.${channel}.tag};
+          bbPackage = releaseDef.npm.bbJs.package or "@aztec/bb.js";
+          bbBinary = "${release.node-runtime-unwrapped}/lib/aztec/node/node_modules/${bbPackage}/build/${bbJsPlatform.${system}}/bb";
         in
           pkgs.mkShell {
             packages = [

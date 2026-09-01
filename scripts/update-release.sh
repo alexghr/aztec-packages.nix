@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/update-release.sh <tag> [--dry-run] [--set-latest] [--set-channel NAME] [--channels-json PATH] [--versions-json PATH]
+Usage: scripts/update-release.sh <tag> [--repository OWNER/NAME] [--npm-scope @SCOPE] [--bb-package @SCOPE/NAME] [--dry-run] [--set-latest] [--set-channel NAME] [--channels-json PATH] [--versions-json PATH]
 
 Collects confirmed release metadata for an Aztec tag and merges it into
 versions.json by default. Use --dry-run to print the generated manifest fragment
@@ -20,6 +20,10 @@ set_latest=0
 set_channel=""
 channels_json="channels.json"
 versions_json="versions.json"
+aztec_repo=""
+npm_scope=""
+bb_package=""
+l1_artifacts_package=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -57,6 +61,38 @@ while [ "$#" -gt 0 ]; do
         exit 2
       fi
       ;;
+    --repository)
+      shift
+      aztec_repo=${1:-}
+      if [ -z "$aztec_repo" ]; then
+        echo "--repository requires an owner/name" >&2
+        exit 2
+      fi
+      ;;
+    --npm-scope)
+      shift
+      npm_scope=${1:-}
+      if [ -z "$npm_scope" ]; then
+        echo "--npm-scope requires a scope" >&2
+        exit 2
+      fi
+      ;;
+    --bb-package)
+      shift
+      bb_package=${1:-}
+      if [ -z "$bb_package" ]; then
+        echo "--bb-package requires a scoped package name" >&2
+        exit 2
+      fi
+      ;;
+    --l1-artifacts-package)
+      shift
+      l1_artifacts_package=${1:-}
+      if [ -z "$l1_artifacts_package" ]; then
+        echo "--l1-artifacts-package requires a scoped package name" >&2
+        exit 2
+      fi
+      ;;
     --*)
       echo "unknown option: $1" >&2
       usage >&2
@@ -78,6 +114,54 @@ if [ -z "$tag" ]; then
   exit 2
 fi
 
+case "$aztec_repo" in
+  */*) ;;
+  "")
+    echo "--repository is required" >&2
+    exit 2
+    ;;
+  *)
+    echo "repository must be an owner/name: $aztec_repo" >&2
+    exit 2
+    ;;
+esac
+
+case "$l1_artifacts_package" in
+  @*/*) ;;
+  "")
+    echo "--l1-artifacts-package is required" >&2
+    exit 2
+    ;;
+  *)
+    echo "L1 artifacts package must be scoped: $l1_artifacts_package" >&2
+    exit 2
+    ;;
+esac
+
+case "$bb_package" in
+  @*/*) ;;
+  "")
+    echo "--bb-package is required" >&2
+    exit 2
+    ;;
+  *)
+    echo "BB package must be scoped: $bb_package" >&2
+    exit 2
+    ;;
+esac
+
+case "$npm_scope" in
+  @*) ;;
+  "")
+    echo "--npm-scope is required" >&2
+    exit 2
+    ;;
+  *)
+    echo "npm scope must start with @: $npm_scope" >&2
+    exit 2
+    ;;
+esac
+
 for tool in curl git grep jq nix; do
   if ! command -v "$tool" >/dev/null 2>&1; then
     echo "required tool not found: $tool" >&2
@@ -85,7 +169,6 @@ for tool in curl git grep jq nix; do
   fi
 done
 
-aztec_repo="AztecProtocol/aztec-packages"
 foundry_repo="foundry-rs/foundry"
 aztec_repo_api="https://api.github.com/repos/$aztec_repo"
 foundry_repo_api="https://api.github.com/repos/$foundry_repo"
@@ -333,6 +416,7 @@ add_prefetched_asset() {
 add_npm_package() {
   local key=$1
   local package=$2
+  local package_version=${3:-$version}
   local encoded=${package//@/%40}
   local npm_json="$tmp_dir/npm-$key.json"
   local metadata_url=""
@@ -341,10 +425,10 @@ add_npm_package() {
   local shasum=""
 
   encoded=${encoded//\//%2F}
-  metadata_url="https://registry.npmjs.org/$encoded/$version"
+  metadata_url="https://registry.npmjs.org/$encoded/$package_version"
 
   if ! curl --fail --location --silent --show-error "$metadata_url" --output "$npm_json"; then
-    die "missing npm package $package@$version"
+    die "missing npm package $package@$package_version"
   fi
 
   tarball=$(jq -r '.dist.tarball // empty' "$npm_json")
@@ -352,22 +436,47 @@ add_npm_package() {
   shasum=$(jq -r '.dist.shasum // empty' "$npm_json")
 
   if [ -z "$tarball" ] || [ -z "$integrity" ]; then
-    die "npm package $package@$version is missing tarball or integrity metadata"
+    die "npm package $package@$package_version is missing tarball or integrity metadata"
   fi
 
   replace_manifest \
     --arg tag "$tag" \
     --arg key "$key" \
     --arg package "$package" \
+    --arg version "$package_version" \
     --arg url "$tarball" \
     --arg hash "$integrity" \
     --arg shasum "$shasum" \
     '.releases[$tag].npm[$key] = {
       package: $package,
+      version: $version,
       url: $url,
       hash: $hash,
       shasum: $shasum
     }'
+}
+
+resolve_npm_package_version() {
+  local package=$1
+  local preferred=$2
+  local encoded=${package//@/%40}
+  local package_json="$tmp_dir/npm-versions-${package##*/}.json"
+  local qualifier=${preferred#*-}
+
+  encoded=${encoded//\//%2F}
+  curl --fail --location --silent --show-error \
+    "https://registry.npmjs.org/$encoded" --output "$package_json" \
+    || die "missing npm package $package"
+
+  if jq -e --arg version "$preferred" '.versions[$version] != null' "$package_json" >/dev/null; then
+    echo "$preferred"
+    return
+  fi
+
+  jq -r --arg suffix "-$qualifier" \
+    '.versions | keys[] | select(endswith($suffix))' "$package_json" \
+    | sort -V \
+    | tail -n 1
 }
 
 add_noirup_asset() {
@@ -410,13 +519,20 @@ else
   die "missing Foundry version in install versions file"
 fi
 
-add_npm_package aztec "@aztec/aztec"
-add_npm_package cliWallet "@aztec/cli-wallet"
-add_npm_package bbJs "@aztec/bb.js"
-add_npm_package noirContractsJs "@aztec/noir-contracts.js"
-add_npm_package noirTestContractsJs "@aztec/noir-test-contracts.js"
-add_npm_package protocolContracts "@aztec/protocol-contracts"
-add_npm_package l1Artifacts "@aztec/l1-artifacts"
+add_npm_package aztec "$npm_scope/aztec"
+add_npm_package cliWallet "$npm_scope/cli-wallet"
+add_npm_package noirContractsJs "$npm_scope/noir-contracts.js"
+add_npm_package noirTestContractsJs "$npm_scope/noir-test-contracts.js"
+add_npm_package protocolContracts "$npm_scope/protocol-contracts"
+
+bb_js_version=$(resolve_npm_package_version "$bb_package" "$version")
+l1_artifacts_version=$(resolve_npm_package_version "$l1_artifacts_package" "$version")
+
+[ -n "$bb_js_version" ] || die "could not resolve $bb_package for $version"
+[ -n "$l1_artifacts_version" ] || die "could not resolve $l1_artifacts_package for $version"
+
+add_npm_package bbJs "$bb_package" "$bb_js_version"
+add_npm_package l1Artifacts "$l1_artifacts_package" "$l1_artifacts_version"
 
 for system in "${systems[@]}"; do
   if ! jq -e --arg tag "$tag" --arg system "$system" '

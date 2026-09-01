@@ -194,13 +194,45 @@ while IFS= read -r channel_entry; do
   if ! jq -e '
     .value
     | if type == "object"
-      then (keys | sort) == ["liveNetworks", "pattern", "releaseType", "tests"]
+      then (keys | sort) == ["bbPackage", "l1ArtifactsPackage", "liveNetworks", "npmScope", "pattern", "releaseType", "repository", "tests"]
       else false
       end
   ' <<<"$channel_entry" >/dev/null; then
-    echo "channel $channel_label must contain exactly: liveNetworks, pattern, releaseType, tests" >&2
+    echo "channel $channel_label must contain exactly: bbPackage, l1ArtifactsPackage, liveNetworks, npmScope, pattern, releaseType, repository, tests" >&2
     invalid=1
     continue
+  fi
+
+  if ! jq -e '
+    .value.l1ArtifactsPackage
+    | type == "string" and test("^@[A-Za-z0-9_-]+/[A-Za-z0-9_.-]+$")
+  ' <<<"$channel_entry" >/dev/null; then
+    echo "channel $channel_label l1ArtifactsPackage must be a scoped npm package" >&2
+    invalid=1
+  fi
+
+  if ! jq -e '
+    .value.bbPackage
+    | type == "string" and test("^@[A-Za-z0-9_-]+/[A-Za-z0-9_.-]+$")
+  ' <<<"$channel_entry" >/dev/null; then
+    echo "channel $channel_label bbPackage must be a scoped npm package" >&2
+    invalid=1
+  fi
+
+  if ! jq -e '
+    .value.npmScope
+    | type == "string" and test("^@[A-Za-z0-9_-]+$")
+  ' <<<"$channel_entry" >/dev/null; then
+    echo "channel $channel_label npmScope must be an npm scope such as @aztec" >&2
+    invalid=1
+  fi
+
+  if ! jq -e '
+    .value.repository
+    | type == "string" and test("^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
+  ' <<<"$channel_entry" >/dev/null; then
+    echo "channel $channel_label repository must be an owner/name GitHub repository" >&2
+    invalid=1
   fi
 
   if ! jq -e '

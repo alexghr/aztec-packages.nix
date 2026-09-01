@@ -18,7 +18,6 @@ channel=""
 tag=""
 channels_json="channels.json"
 versions_json="versions.json"
-aztec_repo_url="https://github.com/AztecProtocol/aztec-packages.git"
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -92,8 +91,9 @@ normalize_tag() {
 
 latest_matching_tag() {
   local pattern=$1
+  local repository=$2
 
-  git ls-remote --tags "$aztec_repo_url" \
+  git ls-remote --tags "https://github.com/$repository.git" \
     | sed -n 's#.*refs/tags/##p' \
     | grep -v '\^{}' \
     | grep -E "$pattern" \
@@ -111,6 +111,10 @@ tag_matches_pattern() {
 mirror_tag() {
   local selected_channel=$1
   local selected_tag=$2
+  local repository=$3
+  local npm_scope=$4
+  local bb_package=$5
+  local l1_artifacts_package=$6
   local args=()
   local previous_tag=""
 
@@ -119,6 +123,7 @@ mirror_tag() {
     previous_tag=$(jq -r --arg channel "$selected_channel" '.channels[$channel].tag // ""' "$versions_json")
   fi
 
+  args+=(--repository "$repository" --npm-scope "$npm_scope" --bb-package "$bb_package" --l1-artifacts-package "$l1_artifacts_package")
   scripts/mirror-release.sh "${args[@]}" "$selected_tag"
 
   if [ -n "$previous_tag" ] && [ "$previous_tag" != "$selected_tag" ]; then
@@ -174,6 +179,10 @@ if [ -n "$tag" ]; then
   while IFS= read -r channel_json; do
     selected_channel=$(printf "%s" "$channel_json" | jq -r '.key')
     pattern=$(printf "%s" "$channel_json" | jq -r '.value.pattern // ""')
+    repository=$(printf "%s" "$channel_json" | jq -r '.value.repository')
+    npm_scope=$(printf "%s" "$channel_json" | jq -r '.value.npmScope')
+    bb_package=$(printf "%s" "$channel_json" | jq -r '.value.bbPackage')
+    l1_artifacts_package=$(printf "%s" "$channel_json" | jq -r '.value.l1ArtifactsPackage')
 
     if [ -z "$pattern" ] || [ "$pattern" = "null" ]; then
       echo "channel $selected_channel has no pattern" >&2
@@ -188,7 +197,7 @@ if [ -n "$tag" ]; then
       continue
     fi
 
-    mirror_tag "$selected_channel" "$tag"
+    mirror_tag "$selected_channel" "$tag" "$repository" "$npm_scope" "$bb_package" "$l1_artifacts_package"
     mirrored=$((mirrored + 1))
   done < <(
     if [ -n "$channel" ]; then
@@ -217,6 +226,10 @@ mirrored=0
 while IFS= read -r channel_json; do
   selected_channel=$(printf "%s" "$channel_json" | jq -r '.key')
   pattern=$(printf "%s" "$channel_json" | jq -r '.value.pattern // ""')
+  repository=$(printf "%s" "$channel_json" | jq -r '.value.repository')
+  npm_scope=$(printf "%s" "$channel_json" | jq -r '.value.npmScope')
+  bb_package=$(printf "%s" "$channel_json" | jq -r '.value.bbPackage')
+  l1_artifacts_package=$(printf "%s" "$channel_json" | jq -r '.value.l1ArtifactsPackage')
   current_tag=$(jq -r --arg channel "$selected_channel" '.channels[$channel].tag // ""' "$versions_json")
 
   if [ -z "$pattern" ] || [ "$pattern" = "null" ]; then
@@ -224,7 +237,7 @@ while IFS= read -r channel_json; do
     exit 1
   fi
 
-  next_tag=$(latest_matching_tag "$pattern")
+  next_tag=$(latest_matching_tag "$pattern" "$repository")
   if [ -z "$next_tag" ]; then
     echo "no upstream tag matched channel $selected_channel pattern: $pattern" >&2
     exit 1
@@ -235,7 +248,7 @@ while IFS= read -r channel_json; do
     continue
   fi
 
-  mirror_tag "$selected_channel" "$next_tag"
+  mirror_tag "$selected_channel" "$next_tag" "$repository" "$npm_scope" "$bb_package" "$l1_artifacts_package"
   mirrored=$((mirrored + 1))
 done < <(
   if [ -n "$channel" ]; then

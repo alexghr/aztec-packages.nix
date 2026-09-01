@@ -3,7 +3,7 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/mirror-release.sh [--channel NAME] <tag>
+Usage: scripts/mirror-release.sh [--channel NAME] [--repository OWNER/NAME] [--npm-scope @SCOPE] [--bb-package @SCOPE/NAME] <tag>
 
 Mirrors an Aztec upstream release into this flake:
 
@@ -17,6 +17,10 @@ EOF
 }
 
 channel=""
+repository=""
+npm_scope=""
+bb_package=""
+l1_artifacts_package=""
 tag=""
 
 while [ "$#" -gt 0 ]; do
@@ -30,6 +34,38 @@ while [ "$#" -gt 0 ]; do
       channel=${1:-}
       if [ -z "$channel" ]; then
         echo "--channel requires a channel name" >&2
+        exit 2
+      fi
+      ;;
+    --repository)
+      shift
+      repository=${1:-}
+      if [ -z "$repository" ]; then
+        echo "--repository requires an owner/name" >&2
+        exit 2
+      fi
+      ;;
+    --npm-scope)
+      shift
+      npm_scope=${1:-}
+      if [ -z "$npm_scope" ]; then
+        echo "--npm-scope requires a scope" >&2
+        exit 2
+      fi
+      ;;
+    --bb-package)
+      shift
+      bb_package=${1:-}
+      if [ -z "$bb_package" ]; then
+        echo "--bb-package requires a scoped package name" >&2
+        exit 2
+      fi
+      ;;
+    --l1-artifacts-package)
+      shift
+      l1_artifacts_package=${1:-}
+      if [ -z "$l1_artifacts_package" ]; then
+        echo "--l1-artifacts-package requires a scoped package name" >&2
         exit 2
       fi
       ;;
@@ -64,6 +100,54 @@ done
 case "$tag" in
   v*) ;;
   *) tag="v$tag" ;;
+esac
+
+case "$l1_artifacts_package" in
+  @*/*) ;;
+  "")
+    echo "--l1-artifacts-package is required" >&2
+    exit 2
+    ;;
+  *)
+    echo "L1 artifacts package must be scoped: $l1_artifacts_package" >&2
+    exit 2
+    ;;
+esac
+
+case "$bb_package" in
+  @*/*) ;;
+  "")
+    echo "--bb-package is required" >&2
+    exit 2
+    ;;
+  *)
+    echo "BB package must be scoped: $bb_package" >&2
+    exit 2
+    ;;
+esac
+
+case "$repository" in
+  */*) ;;
+  "")
+    echo "--repository is required" >&2
+    exit 2
+    ;;
+  *)
+    echo "repository must be an owner/name: $repository" >&2
+    exit 2
+    ;;
+esac
+
+case "$npm_scope" in
+  @*) ;;
+  "")
+    echo "--npm-scope is required" >&2
+    exit 2
+    ;;
+  *)
+    echo "npm scope must start with @: $npm_scope" >&2
+    exit 2
+    ;;
 esac
 
 version=${tag#v}
@@ -112,7 +196,7 @@ nix_build_node_runtime() {
 
 mkdir -p "$node_runtime_dir"
 
-update_args=("$tag")
+update_args=("$tag" --repository "$repository" --npm-scope "$npm_scope" --bb-package "$bb_package" --l1-artifacts-package "$l1_artifacts_package")
 if [ -n "$channel" ]; then
   update_args+=(--set-channel "$channel")
 fi
@@ -122,17 +206,30 @@ fi
 
 scripts/update-release.sh "${update_args[@]}"
 
+aztec_package=$(jq -r --arg tag "$tag" '.releases[$tag].npm.aztec.package' "$versions_json")
+aztec_package_version=$(jq -r --arg tag "$tag" '.releases[$tag].npm.aztec.version // .releases[$tag].version' "$versions_json")
+bb_js_package=$(jq -r --arg tag "$tag" '.releases[$tag].npm.bbJs.package' "$versions_json")
+bb_js_package_version=$(jq -r --arg tag "$tag" '.releases[$tag].npm.bbJs.version // .releases[$tag].version' "$versions_json")
+cli_wallet_package=$(jq -r --arg tag "$tag" '.releases[$tag].npm.cliWallet.package' "$versions_json")
+cli_wallet_package_version=$(jq -r --arg tag "$tag" '.releases[$tag].npm.cliWallet.version // .releases[$tag].version' "$versions_json")
+
 jq -n \
   --arg version "$version" \
+  --arg aztecPackage "$aztec_package" \
+  --arg aztecPackageVersion "$aztec_package_version" \
+  --arg bbJsPackage "$bb_js_package" \
+  --arg bbJsPackageVersion "$bb_js_package_version" \
+  --arg cliWalletPackage "$cli_wallet_package" \
+  --arg cliWalletPackageVersion "$cli_wallet_package_version" \
   '{
     name: "aztec-node-runtime",
     version: $version,
     private: true,
     type: "module",
     dependencies: {
-      "@aztec/aztec": $version,
-      "@aztec/bb.js": $version,
-      "@aztec/cli-wallet": $version
+      ($aztecPackage): $aztecPackageVersion,
+      ($bbJsPackage): $bbJsPackageVersion,
+      ($cliWalletPackage): $cliWalletPackageVersion
     }
   }' > "$package_json"
 

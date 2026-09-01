@@ -10,6 +10,10 @@
   buildNpmPackage,
 }: let
   nodeRuntimePath = release.nodeRuntime.path or tag;
+  aztecPackage = release.npm.aztec.package or "@aztec/aztec";
+  aztecScope = builtins.dirOf aztecPackage;
+  bbPackage = release.npm.bbJs.package or "@aztec/bb.js";
+  l1ArtifactsPackage = release.npm.l1Artifacts.package or "@aztec/l1-artifacts";
   platformDirs =
     {
       x86_64-linux = {
@@ -61,14 +65,14 @@ in
         ! -name ${lib.escapeShellArg platformDirs.leveldown} \
         -exec rm -rf {} +
 
-      find "$nodeModules/@aztec/bb.js/build" -mindepth 1 -maxdepth 1 -type d \
+      find "$nodeModules/${bbPackage}/build" -mindepth 1 -maxdepth 1 -type d \
         ! -name ${lib.escapeShellArg platformDirs.bbJs} \
         -exec rm -rf {} +
 
       # Some releases ship Foundry deployment run caches. Forge rewrites those
       # paths during localnet startup, so keep only the cache file and let Forge
       # recreate writable run-cache directories in the runtime temp directory.
-      l1ContractsCache="$nodeModules/@aztec/l1-artifacts/l1-contracts/cache"
+      l1ContractsCache="$nodeModules/${l1ArtifactsPackage}/l1-contracts/cache"
       if [ -d "$l1ContractsCache" ]; then
         find "$l1ContractsCache" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
       fi
@@ -76,7 +80,7 @@ in
       # this script copies files from its package to a tmp dir and calls forge for deployments
       # in this case the files are copied from the nix store as read-only
       # forge needs to be able to write cache files. This patch calls chmod to allow writes
-      substituteInPlace "$nodeModules/@aztec/ethereum/dest/deploy_aztec_l1_contracts.js" \
+      substituteInPlace "$nodeModules/${aztecScope}/ethereum/dest/deploy_aztec_l1_contracts.js" \
         --replace-fail \
           "import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';" \
           "import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';" \
@@ -86,13 +90,13 @@ in
 
       # as above but for one of the helper scripts
       # the env vars in this substitution reference vars from inside the script
-      substituteInPlace "$nodeModules/@aztec/aztec/scripts/add_crate.sh" \
+      substituteInPlace "$nodeModules/${aztecPackage}/scripts/add_crate.sh" \
         --replace-fail \
           'cp -r "$TEMPLATE_DIR/test" "$test_dir"' \
           'cp -r "$TEMPLATE_DIR/test" "$test_dir"; chmod -R u+w "$contract_dir" "$test_dir"'
 
       patchShebangs $out/lib/aztec/node/node_modules/.bin || true
-      patchShebangs $out/lib/aztec/node/node_modules/@aztec || true
+      patchShebangs "$out/lib/aztec/node/node_modules/${aztecScope}" || true
 
       runHook postInstall
     '';
