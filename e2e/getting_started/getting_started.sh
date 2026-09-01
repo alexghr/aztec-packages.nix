@@ -23,16 +23,22 @@ AZTEC_WALLET_DATA="$AZTEC_WORKING_DIR/wallet"
 mkdir -p "$AZTEC_LOCALNET_DATA" "$AZTEC_WALLET_DATA"
 
 cleanup() {
+  status=$?
   if [ -n "${AZTEC_LOCALNET_PID:-}" ]; then
     kill -- "-$AZTEC_LOCALNET_PID" 2>/dev/null || true
     wait "$AZTEC_LOCALNET_PID" 2>/dev/null || true
   fi
+  if [ "$status" -ne 0 ] && [ -f "$AZTEC_LOCALNET_LOG" ]; then
+    echo "Localnet log after test failure:" >&2
+    tail -n 200 "$AZTEC_LOCALNET_LOG" >&2
+  fi
   rm -rf "$AZTEC_WORKING_DIR"
+  return "$status"
 }
 
 trap cleanup EXIT
 
-export LOG_LEVEL=silent
+export LOG_LEVEL="${LOG_LEVEL:-silent}"
 export PXE_PROVER=none
 export SEQ_ENABLE_PROPOSER_PIPELINING=true
 
