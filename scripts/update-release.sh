@@ -3,12 +3,11 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/update-release.sh <tag> [--repository OWNER/NAME] [--npm-scope @SCOPE] [--bb-package @SCOPE/NAME] [--dry-run] [--set-latest] [--set-channel NAME] [--channels-json PATH] [--versions-json PATH]
+Usage: scripts/update-release.sh <tag> [--repository OWNER/NAME] [--npm-scope @SCOPE] [--bb-package @SCOPE/NAME] [--l1-artifacts-package @SCOPE/NAME] [--dry-run] [--set-channel NAME] [--channels-json PATH] [--versions-json PATH]
 
 Collects confirmed release metadata for an Aztec tag and merges it into
 versions.json by default. Use --dry-run to print the generated manifest fragment
-without writing. Existing latest values are preserved unless --set-latest is
-passed. Use --set-channel to update a channel declared in channels.json.
+without writing. Use --set-channel to update a channel declared in channels.json.
 
 Required tools: curl, git, grep, jq, nix.
 EOF
@@ -16,7 +15,6 @@ EOF
 
 tag=""
 dry_run=0
-set_latest=0
 set_channel=""
 channels_json="channels.json"
 versions_json="versions.json"
@@ -33,9 +31,6 @@ while [ "$#" -gt 0 ]; do
       ;;
     --dry-run)
       dry_run=1
-      ;;
-    --set-latest)
-      set_latest=1
       ;;
     --set-channel)
       shift
@@ -170,13 +165,11 @@ for tool in curl git grep jq nix; do
 done
 
 foundry_repo="foundry-rs/foundry"
-aztec_repo_api="https://api.github.com/repos/$aztec_repo"
 foundry_repo_api="https://api.github.com/repos/$foundry_repo"
 version=${tag#v}
 tmp_dir=$(mktemp -d)
 trap 'rm -rf "$tmp_dir"' EXIT
 
-aztec_release_json="$tmp_dir/aztec-release.json"
 foundry_release_json="$tmp_dir/foundry-release.json"
 install_versions="$tmp_dir/install-versions"
 manifest_json="$tmp_dir/manifest.json"
@@ -215,26 +208,13 @@ if ! git ls-remote --exit-code --tags "https://github.com/$aztec_repo.git" "refs
   exit 1
 fi
 
-if ! curl --fail --location --silent \
-  "$aztec_repo_api/releases/tags/$tag" \
-  --output "$aztec_release_json"; then
-  : > "$aztec_release_json"
-fi
-
 curl --fail --location --silent --show-error \
   "https://install.aztec-labs.com/$version/versions" \
   --output "$install_versions" || die "missing Aztec install versions file for $version"
 
-release_url="https://github.com/$aztec_repo/releases/tag/$tag"
-if [ -s "$aztec_release_json" ]; then
-  release_url=$(jq -r '.html_url // empty' "$aztec_release_json")
-fi
-
-node_version=""
 noir_version=""
 foundry_version=""
 if [ -s "$install_versions" ]; then
-  node_version=$(awk -F: '/^node:/ {gsub(/^[ \t]+/, "", $2); print $2}' "$install_versions")
   noir_version=$(awk -F: '/^noir:/ {gsub(/^[ \t]+/, "", $2); print $2}' "$install_versions")
   foundry_version=$(awk -F: '/^foundry:/ {gsub(/^[ \t]+/, "", $2); print $2}' "$install_versions")
 fi
@@ -242,28 +222,16 @@ fi
 jq -n \
   --arg tag "$tag" \
   --arg version "$version" \
-  --arg nodeVersion "$node_version" \
+  --arg channel "$set_channel" \
   --arg noirVersion "$noir_version" \
   --arg foundryVersion "$foundry_version" \
-  --arg upstreamRepo "$aztec_repo" \
-  --arg releaseUrl "$release_url" \
-  --arg installBaseUrl "https://install.aztec-labs.com/$version" \
   '{
-    latest: $tag,
+    channels: (if $channel != "" then { ($channel): { tag: $tag } } else {} end),
     releases: {
       ($tag): {
         version: $version,
-        nodeVersion: $nodeVersion,
         noirVersion: $noirVersion,
         foundryVersion: $foundryVersion,
-        upstream: {
-          repository: $upstreamRepo,
-          releaseUrl: $releaseUrl,
-          installBaseUrl: $installBaseUrl
-        },
-        nodeRuntime: {
-          path: $tag
-        },
         systems: {},
         npm: {},
         npmDepsHash: "sha256-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="
@@ -297,23 +265,10 @@ sri_from_digest() {
 asset_field() {
   local asset_name=$1
   local field=$2
-  local release_file
-  local value
 
-  for release_file in "$aztec_release_json" "$foundry_release_json"; do
-    if [ ! -s "$release_file" ]; then
-      continue
-    fi
-
-    value=$(jq -r --arg name "$asset_name" --arg field "$field" \
-      '.assets[]? | select(.name == $name) | .[$field] // empty' \
-      "$release_file" | head -n 1)
-
-    if [ -n "$value" ]; then
-      echo "$value"
-      return 0
-    fi
-  done
+  jq -r --arg name "$asset_name" --arg field "$field" \
+    '.assets[]? | select(.name == $name) | .[$field] // empty' \
+    "$foundry_release_json" | head -n 1
 }
 
 foundry_asset_suffix() {
@@ -379,11 +334,9 @@ add_github_asset() {
     --arg tag "$tag" \
     --arg system "$system" \
     --arg key "$key" \
-    --arg name "$asset_name" \
     --arg url "$url" \
     --arg hash "$hash" \
     '.releases[$tag].systems[$system][$key] = {
-      name: $name,
       url: $url,
       hash: $hash
     }'
@@ -392,8 +345,7 @@ add_github_asset() {
 add_prefetched_asset() {
   local system=$1
   local key=$2
-  local name=$3
-  local url=$4
+  local url=$3
   local hash
 
   hash=$(nix store prefetch-file --json "$url" | jq -r '.hash') || return 1
@@ -402,12 +354,9 @@ add_prefetched_asset() {
     --arg tag "$tag" \
     --arg system "$system" \
     --arg key "$key" \
-    --arg name "$name" \
     --arg url "$url" \
     --arg hash "$hash" \
     '.releases[$tag].systems[$system][$key] = {
-      source: "noirup",
-      name: $name,
       url: $url,
       hash: $hash
     }'
@@ -416,13 +365,13 @@ add_prefetched_asset() {
 add_npm_package() {
   local key=$1
   local package=$2
-  local package_version=${3:-$version}
+  local package_type=$3
+  local package_version=${4:-$version}
   local encoded=${package//@/%40}
   local npm_json="$tmp_dir/npm-$key.json"
   local metadata_url=""
   local tarball=""
   local integrity=""
-  local shasum=""
 
   encoded=${encoded//\//%2F}
   metadata_url="https://registry.npmjs.org/$encoded/$package_version"
@@ -431,29 +380,34 @@ add_npm_package() {
     die "missing npm package $package@$package_version"
   fi
 
-  tarball=$(jq -r '.dist.tarball // empty' "$npm_json")
-  integrity=$(jq -r '.dist.integrity // empty' "$npm_json")
-  shasum=$(jq -r '.dist.shasum // empty' "$npm_json")
+  case "$package_type" in
+    runtime)
+      replace_manifest \
+        --arg tag "$tag" \
+        --arg key "$key" \
+        --arg package "$package" \
+        --arg version "$package_version" \
+        '.releases[$tag].npm[$key] = { package: $package, version: $version }'
+      ;;
+    artifact)
+      tarball=$(jq -r '.dist.tarball // empty' "$npm_json")
+      integrity=$(jq -r '.dist.integrity // empty' "$npm_json")
 
-  if [ -z "$tarball" ] || [ -z "$integrity" ]; then
-    die "npm package $package@$package_version is missing tarball or integrity metadata"
-  fi
+      if [ -z "$tarball" ] || [ -z "$integrity" ]; then
+        die "npm package $package@$package_version is missing tarball or integrity metadata"
+      fi
 
-  replace_manifest \
-    --arg tag "$tag" \
-    --arg key "$key" \
-    --arg package "$package" \
-    --arg version "$package_version" \
-    --arg url "$tarball" \
-    --arg hash "$integrity" \
-    --arg shasum "$shasum" \
-    '.releases[$tag].npm[$key] = {
-      package: $package,
-      version: $version,
-      url: $url,
-      hash: $hash,
-      shasum: $shasum
-    }'
+      replace_manifest \
+        --arg tag "$tag" \
+        --arg key "$key" \
+        --arg url "$tarball" \
+        --arg hash "$integrity" \
+        '.releases[$tag].npm[$key] = { url: $url, hash: $hash }'
+      ;;
+    *)
+      die "unknown npm package type: $package_type"
+      ;;
+  esac
 }
 
 resolve_npm_package_version() {
@@ -497,7 +451,7 @@ add_noirup_asset() {
   name="noir-$suffix.tar.gz"
   url="$base_url/$name"
 
-  add_prefetched_asset "$system" noir "$name" "$url" || die "missing noirup asset $url"
+  add_prefetched_asset "$system" noir "$url" || die "missing noirup asset $url"
 }
 
 for system in "${systems[@]}"; do
@@ -519,11 +473,11 @@ else
   die "missing Foundry version in install versions file"
 fi
 
-add_npm_package aztec "$npm_scope/aztec"
-add_npm_package cliWallet "$npm_scope/cli-wallet"
-add_npm_package noirContractsJs "$npm_scope/noir-contracts.js"
-add_npm_package noirTestContractsJs "$npm_scope/noir-test-contracts.js"
-add_npm_package protocolContracts "$npm_scope/protocol-contracts"
+add_npm_package aztec "$npm_scope/aztec" runtime
+add_npm_package cliWallet "$npm_scope/cli-wallet" runtime
+add_npm_package noirContractsJs "$npm_scope/noir-contracts.js" artifact
+add_npm_package noirTestContractsJs "$npm_scope/noir-test-contracts.js" artifact
+add_npm_package protocolContracts "$npm_scope/protocol-contracts" artifact
 
 bb_js_version=$(resolve_npm_package_version "$bb_package" "$version")
 l1_artifacts_version=$(resolve_npm_package_version "$l1_artifacts_package" "$version")
@@ -531,8 +485,8 @@ l1_artifacts_version=$(resolve_npm_package_version "$l1_artifacts_package" "$ver
 [ -n "$bb_js_version" ] || die "could not resolve $bb_package for $version"
 [ -n "$l1_artifacts_version" ] || die "could not resolve $l1_artifacts_package for $version"
 
-add_npm_package bbJs "$bb_package" "$bb_js_version"
-add_npm_package l1Artifacts "$l1_artifacts_package" "$l1_artifacts_version"
+add_npm_package bbJs "$bb_package" runtime "$bb_js_version"
+add_npm_package l1Artifacts "$l1_artifacts_package" artifact "$l1_artifacts_version"
 
 for system in "${systems[@]}"; do
   if ! jq -e --arg tag "$tag" --arg system "$system" '
@@ -561,30 +515,12 @@ fi
 
 if [ -f "$versions_json" ]; then
   next_versions="$tmp_dir/versions.next.json"
-  jq -s --arg setLatest "$set_latest" --arg setChannel "$set_channel" '
+  jq -s '
     .[0] as $base |
     .[1] as $incoming |
     $base
-    | .latest = (if ($setLatest == "1") or (.latest == null) then $incoming.latest else .latest end)
-    | .channels = (
-        if $setChannel != ""
-        then
-          (.channels // {})
-          | .[$setChannel] = { tag: $incoming.latest }
-        else .channels
-        end
-      )
-    | .releases = (
-        reduce ($incoming.releases | to_entries[]) as $entry
-          (.releases // {};
-            .[$entry.key] = (
-              ($entry.value) as $next |
-              (.[$entry.key] // {}) as $existing |
-              $next
-              | .npmDepsHash = ($existing.npmDepsHash // $next.npmDepsHash)
-            )
-          )
-      )
+    | .channels = ((.channels // {}) + $incoming.channels)
+    | .releases = ((.releases // {}) + $incoming.releases)
   ' "$versions_json" "$manifest_json" > "$next_versions"
   mv "$next_versions" "$versions_json"
 else

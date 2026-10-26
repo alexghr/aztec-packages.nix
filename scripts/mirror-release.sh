@@ -200,10 +200,6 @@ update_args=("$tag" --repository "$repository" --npm-scope "$npm_scope" --bb-pac
 if [ -n "$channel" ]; then
   update_args+=(--set-channel "$channel")
 fi
-if [ "$channel" = "v4-stable" ] || [ "${MIRROR_SET_LATEST:-0}" = "1" ]; then
-  update_args+=(--set-latest)
-fi
-
 scripts/update-release.sh "${update_args[@]}"
 
 aztec_package=$(jq -r --arg tag "$tag" '.releases[$tag].npm.aztec.package' "$versions_json")

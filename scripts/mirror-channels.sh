@@ -134,15 +134,13 @@ mirror_tag() {
 remove_release() {
   local release_tag=$1
   local next_versions
-  local node_runtime_path
 
   if [ -z "$release_tag" ] || ! jq -e --arg tag "$release_tag" '.releases[$tag] != null' "$versions_json" >/dev/null; then
     return
   fi
 
   if jq -e --arg tag "$release_tag" --slurpfile configured "$channels_json" '
-    .latest == $tag
-    or any(
+    any(
       (.channels // {} | to_entries[]?);
       . as $state
       | $state.value.tag == $tag
@@ -153,19 +151,18 @@ remove_release() {
     return
   fi
 
-  node_runtime_path=$(jq -r --arg tag "$release_tag" '.releases[$tag].nodeRuntime.path // $tag' "$versions_json")
   next_versions=$(mktemp)
   jq --arg tag "$release_tag" '
     del(.releases[$tag])
   ' "$versions_json" > "$next_versions"
   mv "$next_versions" "$versions_json"
 
-  case "$node_runtime_path" in
+  case "$release_tag" in
     ""|/*|*/*|*..*)
-      echo "skipping unsafe node-runtime path for $release_tag: $node_runtime_path" >&2
+      echo "skipping unsafe node-runtime path for $release_tag" >&2
       ;;
     *)
-      rm -rf -- "node-runtime/$node_runtime_path"
+      rm -rf -- "node-runtime/$release_tag"
       ;;
   esac
 

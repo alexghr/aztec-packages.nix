@@ -63,13 +63,8 @@
         defaultChannel = channelDefinitions.defaultChannel;
         supportedReleaseDefs = lib.filterAttrs (_: release: releaseSupportsSystem release) versions.releases;
         releases = lib.mapAttrs mkRelease supportedReleaseDefs;
-        defaultTag =
-          if
-            builtins.hasAttr defaultChannel configuredChannels
-            && configuredChannels.${defaultChannel} ? tag
-          then configuredChannels.${defaultChannel}.tag
-          else versions.latest;
-        hasDefault = builtins.hasAttr defaultTag releases;
+        defaultTag = configuredChannels.${defaultChannel}.tag or null;
+        hasDefault = defaultTag != null && builtins.hasAttr defaultTag releases;
         latest =
           if hasDefault
           then releases.${defaultTag}
@@ -248,9 +243,8 @@
         };
 
         mkDevShell = channel: release: let
-          isV4Channel = lib.hasPrefix "v4-" channel;
           releaseDef = versions.releases.${configuredChannels.${channel}.tag};
-          bbPackage = releaseDef.npm.bbJs.package or "@aztec/bb.js";
+          bbPackage = releaseDef.npm.bbJs.package or "@aztec-foundation/bb.js";
           bbBinary = "${release.node-runtime-unwrapped}/lib/aztec/node/node_modules/${bbPackage}/build/${bbJsPlatform.${system}}/bb";
         in
           pkgs.mkShell {
@@ -273,22 +267,9 @@
             FORGE_BIN = "${release.foundry}/bin/forge";
             NARGO = "${release.noir}/bin/nargo";
 
-            shellHook =
-              ''
-                export BB_WORKING_DIRECTORY="''${BB_WORKING_DIRECTORY:-''${TMPDIR:-/tmp}/aztec-bb}"
-              ''
-              # on v4 we need to patch bb.js since it does not read BB_BINARY_PATH
-              + lib.optionalString isV4Channel ''
-                aztec_link_bb() {
-                  local bb_js_dir="node_modules/@aztec/bb.js/build/${bbJsPlatform.${system}}"
-
-                  if [ -d "$bb_js_dir" ]; then
-                    ln -sfn "${bbBinary}" "$bb_js_dir/bb"
-                  fi
-                }
-
-                aztec_link_bb
-              '';
+            shellHook = ''
+              export BB_WORKING_DIRECTORY="''${BB_WORKING_DIRECTORY:-''${TMPDIR:-/tmp}/aztec-bb}"
+            '';
           };
 
         channelDevShells =

@@ -107,8 +107,8 @@ jobs:
           )
           nix build -L --no-link --system "${{ matrix.system }}" "${channel_attrs[@]}"
 
-      - name: test v5-stable development shell
-        run: nix develop .#v5-stable --command scripts/dev-shell-smoke-test.sh v5-stable
+      - name: test v6 development shell
+        run: nix develop .#v6 --command scripts/dev-shell-smoke-test.sh v6
 
   e2e:
     name: test ${{ matrix.channel }} (x86_64-linux)

@@ -1,6 +1,7 @@
 {
   autoPatchelfHook,
   lib,
+  nodejs_24,
   openssl,
   stdenv,
   tag,
@@ -9,11 +10,9 @@
   zlib,
   buildNpmPackage,
 }: let
-  nodeRuntimePath = release.nodeRuntime.path or tag;
-  aztecPackage = release.npm.aztec.package or "@aztec/aztec";
+  aztecPackage = release.npm.aztec.package or "@aztec-labs/aztec";
   aztecScope = builtins.dirOf aztecPackage;
-  bbPackage = release.npm.bbJs.package or "@aztec/bb.js";
-  l1ArtifactsPackage = release.npm.l1Artifacts.package or "@aztec/l1-artifacts";
+  bbPackage = release.npm.bbJs.package or "@aztec-foundation/bb.js";
   platformDirs =
     {
       x86_64-linux = {
@@ -34,8 +33,9 @@ in
     pname = "aztec-node-runtime-unwrapped";
     version = release.version or tag;
 
-    src = ../node-runtime + "/${nodeRuntimePath}";
+    src = ../node-runtime + "/${tag}";
     npmDepsHash = release.npmDepsHash;
+    nodejs = nodejs_24;
     dontNpmBuild = true;
 
     nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [
@@ -69,24 +69,33 @@ in
         ! -name ${lib.escapeShellArg platformDirs.bbJs} \
         -exec rm -rf {} +
 
-      # Some releases ship Foundry deployment run caches. Forge rewrites those
-      # paths during localnet startup, so keep only the cache file and let Forge
-      # recreate writable run-cache directories in the runtime temp directory.
-      l1ContractsCache="$nodeModules/${l1ArtifactsPackage}/l1-contracts/cache"
-      if [ -d "$l1ContractsCache" ]; then
-        find "$l1ContractsCache" -mindepth 1 -maxdepth 1 -type d -exec rm -rf {} +
-      fi
-
       # this script copies files from its package to a tmp dir and calls forge for deployments
       # in this case the files are copied from the nix store as read-only
-      # forge needs to be able to write cache files. This patch calls chmod to allow writes
+      # Forge needs writable cache files, including the nested recovery snapshots
+      # shipped with v6. Keep those snapshots and make the copied cache writable.
+      cacheCopyPatch=$(cat <<'JS'
+      cpSync(join(basePath, 'cache'), join(tempDir, 'cache'), copyOpts);
+      const makeCacheWritable = dir => {
+          chmodSync(dir, 0o755);
+          for (const entry of readdirSync(dir, { withFileTypes: true })) {
+              const path = join(dir, entry.name);
+              if (entry.isDirectory()) {
+                  makeCacheWritable(path);
+              } else {
+                  chmodSync(path, 0o644);
+              }
+          }
+      };
+      makeCacheWritable(join(tempDir, 'cache'));
+      JS
+      )
       substituteInPlace "$nodeModules/${aztecScope}/ethereum/dest/deploy_aztec_l1_contracts.js" \
         --replace-fail \
-          "import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';" \
-          "import { chmodSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'fs';" \
+          "import { cpSync, existsSync," \
+          "import { chmodSync, readdirSync, cpSync, existsSync," \
         --replace-fail \
           "cpSync(join(basePath, 'cache'), join(tempDir, 'cache'), copyOpts);" \
-          "cpSync(join(basePath, 'cache'), join(tempDir, 'cache'), copyOpts); chmodSync(join(tempDir, 'cache'), 0o755); chmodSync(join(tempDir, 'cache', 'solidity-files-cache.json'), 0o644);"
+          "$cacheCopyPatch"
 
       # as above but for one of the helper scripts
       # the env vars in this substitution reference vars from inside the script
@@ -103,7 +112,7 @@ in
 
     meta = {
       description = "Unwrapped Node runtime for Aztec CLI packages";
-      homepage = "https://github.com/AztecProtocol/aztec-packages";
+      homepage = "https://github.com/aztec-labs-eng/aztec-node";
       license = lib.licenses.asl20;
       platforms = [
         "x86_64-linux"

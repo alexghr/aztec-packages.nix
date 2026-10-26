@@ -83,7 +83,7 @@ in
 
     meta = {
       description = "Noir binaries pinned by the Aztec installer";
-      homepage = "https://github.com/AztecProtocol/aztec-packages/tree/next/aztec-up";
+      homepage = "https://github.com/noir-lang/noir";
       license = lib.licenses.asl20;
       mainProgram = "nargo";
       platforms = [

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-channel=${1:-v5-stable}
+channel=${1:-v6}
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 task_limit=
 

@@ -1,39 +1,13 @@
 {
-  "defaultChannel": "v5-stable",
+  "defaultChannel": "v6",
   "channels": {
-    "v4-stable": {
-      "bbPackage": "@aztec/bb.js",
-      "l1ArtifactsPackage": "@aztec/l1-artifacts",
-      "liveNetworks": [],
-      "npmScope": "@aztec",
-      "pattern": "^v4\\.[0-9]+\\.[0-9]+$",
-      "repository": "AztecProtocol/aztec-packages",
-      "releaseType": "stable",
-      "tests": {
-        "gettingStarted": true,
-        "counterContract": false
-      }
-    },
-    "v5-nightly": {
-      "bbPackage": "@aztec/bb.js",
-      "l1ArtifactsPackage": "@aztec/l1-artifacts",
-      "liveNetworks": [],
-      "npmScope": "@aztec",
-      "pattern": "^v5\\.[0-9]+\\.[0-9]+-nightly",
-      "repository": "AztecProtocol/aztec-packages",
-      "releaseType": "nightly",
-      "tests": {
-        "gettingStarted": true,
-        "counterContract": true
-      }
-    },
-    "v5-stable": {
-      "bbPackage": "@aztec/bb.js",
-      "l1ArtifactsPackage": "@aztec/l1-artifacts",
+    "v6": {
+      "bbPackage": "@aztec-foundation/bb.js",
+      "l1ArtifactsPackage": "@aztec-foundation/l1-artifacts",
       "liveNetworks": ["testnet", "mainnet"],
-      "npmScope": "@aztec",
-      "pattern": "^v5\\.[0-9]+\\.[0-9]+$",
-      "repository": "AztecProtocol/aztec-packages",
+      "npmScope": "@aztec-labs",
+      "pattern": "^v6\\.[0-9]+\\.[0-9]+$",
+      "repository": "aztec-labs-eng/aztec-node",
       "releaseType": "stable",
       "tests": {
         "gettingStarted": true,
@@ -45,7 +19,7 @@
       "l1ArtifactsPackage": "@aztec-foundation/l1-artifacts",
       "liveNetworks": [],
       "npmScope": "@aztec-labs",
-      "pattern": "^v6\\.0\\.0-nightly",
+      "pattern": "^v6\\.[0-9]+\\.[0-9]+-nightly\\.[0-9]+$",
       "repository": "aztec-labs-eng/aztec-node",
       "releaseType": "nightly",
       "tests": {
