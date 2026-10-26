@@ -55,6 +55,7 @@ in
       platforms = [
         "x86_64-linux"
         "aarch64-linux"
+        "aarch64-darwin"
       ];
       sourceProvenance = with lib.sourceTypes; [binaryNativeCode];
     };

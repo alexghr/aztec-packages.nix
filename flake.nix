@@ -19,6 +19,7 @@
       systems = [
         "x86_64-linux"
         "aarch64-linux"
+        "aarch64-darwin"
       ];
 
       perSystem = {
@@ -53,6 +54,7 @@
         bbJsPlatform = {
           x86_64-linux = "amd64-linux";
           aarch64-linux = "arm64-linux";
+          aarch64-darwin = "arm64-macos";
         };
 
         mkRelease = tag: release:
@@ -81,8 +83,9 @@
             && builtins.hasAttr testName channel.tests
             && channel.tests.${testName} == false
           );
-        gettingStartedChannels = lib.filterAttrs (_: channel: channelTestEnabled "gettingStarted" channel) mirroredChannels;
-        counterContractChannels = lib.filterAttrs (_: channel: channelTestEnabled "counterContract" channel) mirroredChannels;
+        e2eChannels = lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux mirroredChannels;
+        gettingStartedChannels = lib.filterAttrs (_: channel: channelTestEnabled "gettingStarted" channel) e2eChannels;
+        counterContractChannels = lib.filterAttrs (_: channel: channelTestEnabled "counterContract" channel) e2eChannels;
 
         channelPackages =
           lib.concatMapAttrs (
@@ -164,7 +167,7 @@
               "${channel}-e2e" = mkChannelE2E channel metadata;
             }
           )
-          mirroredChannels;
+          e2eChannels;
 
         allE2EPackage = mkE2ESuite "aztec-e2e" (lib.attrValues channelE2EPackages);
 
@@ -248,16 +251,21 @@
           bbBinary = "${release.node-runtime-unwrapped}/lib/aztec/node/node_modules/${bbPackage}/build/${bbJsPlatform.${system}}/bb";
         in
           pkgs.mkShell {
-            packages = [
-              release.aztec-bin
-              release.noir
-              pkgs.corepack
-              pkgs.jq
-              pkgs.netcat-openbsd
-              pkgs.nodejs_24
-              pkgs.procps
-              pkgs.python3
-            ];
+            packages =
+              [
+                release.aztec-bin
+                release.noir
+                pkgs.corepack
+                pkgs.jq
+                (
+                  if pkgs.stdenv.hostPlatform.isDarwin
+                  then pkgs.netcat
+                  else pkgs.netcat-openbsd
+                )
+                pkgs.nodejs_24
+                pkgs.python3
+              ]
+              ++ lib.optionals pkgs.stdenv.hostPlatform.isLinux [pkgs.procps];
 
             SSL_CERT_FILE = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
             AZTEC_CONTRACTS_DIR = "${release.aztec-bin}/share/aztec/contracts";
@@ -319,16 +327,18 @@
 
         packages =
           (
-            lib.optionalAttrs hasDefault {
-              default = latest.aztec-bin;
-              aztec-bin = latest.aztec-bin;
-              aztec-bb = latest.aztec-bin;
-              aztec-contracts = latest.contracts;
-              aztec-foundry = latest.foundry;
-              aztec-noir = latest.noir;
-              e2e = allE2EPackage;
-              getting-started-e2e = mkGettingStartedE2E defaultChannel latest;
-            }
+            lib.optionalAttrs hasDefault ({
+                default = latest.aztec-bin;
+                aztec-bin = latest.aztec-bin;
+                aztec-bb = latest.aztec-bin;
+                aztec-contracts = latest.contracts;
+                aztec-foundry = latest.foundry;
+                aztec-noir = latest.noir;
+              }
+              // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+                e2e = allE2EPackage;
+                getting-started-e2e = mkGettingStartedE2E defaultChannel latest;
+              })
           )
           // channelPackages
           // channelGettingStartedE2EPackages
@@ -337,22 +347,24 @@
 
         apps =
           (
-            lib.optionalAttrs hasDefault {
-              default = config.apps.aztec;
-              aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
-              aztec-anvil = mkApp "Run Aztec-bundled Anvil" "${config.packages.aztec-bin}/bin/aztec-anvil";
-              aztec-bb = mkApp "Run Aztec-bundled Barretenberg" "${config.packages.aztec-bin}/bin/aztec-bb";
-              aztec-cast = mkApp "Run Aztec-bundled Cast" "${config.packages.aztec-bin}/bin/aztec-cast";
-              aztec-chisel = mkApp "Run Aztec-bundled Chisel" "${config.packages.aztec-bin}/bin/aztec-chisel";
-              aztec-forge = mkApp "Run Aztec-bundled Forge" "${config.packages.aztec-bin}/bin/aztec-forge";
-              aztec-nargo = mkApp "Run Aztec-bundled Noir nargo" "${config.packages.aztec-bin}/bin/aztec-nargo";
-              aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
-              bb = mkApp "Run Aztec-bundled Barretenberg" "${config.packages.aztec-bin}/bin/aztec-bb";
-              e2e = mkApp "Run all Aztec local-network E2E suites" (lib.getExe config.packages.e2e);
-              getting-started-e2e = mkApp "Run the Aztec getting-started local-network E2E" (lib.getExe config.packages.getting-started-e2e);
-              info = mkApp "Print all Aztec channel metadata as JSON" (lib.getExe infoApp);
-              nargo = mkApp "Run Noir nargo" "${config.packages.aztec-noir}/bin/nargo";
-            }
+            lib.optionalAttrs hasDefault ({
+                default = config.apps.aztec;
+                aztec = mkApp "Run the Aztec CLI" "${config.packages.aztec-bin}/bin/aztec";
+                aztec-anvil = mkApp "Run Aztec-bundled Anvil" "${config.packages.aztec-bin}/bin/aztec-anvil";
+                aztec-bb = mkApp "Run Aztec-bundled Barretenberg" "${config.packages.aztec-bin}/bin/aztec-bb";
+                aztec-cast = mkApp "Run Aztec-bundled Cast" "${config.packages.aztec-bin}/bin/aztec-cast";
+                aztec-chisel = mkApp "Run Aztec-bundled Chisel" "${config.packages.aztec-bin}/bin/aztec-chisel";
+                aztec-forge = mkApp "Run Aztec-bundled Forge" "${config.packages.aztec-bin}/bin/aztec-forge";
+                aztec-nargo = mkApp "Run Aztec-bundled Noir nargo" "${config.packages.aztec-bin}/bin/aztec-nargo";
+                aztec-wallet = mkApp "Run the Aztec wallet CLI" "${config.packages.aztec-bin}/bin/aztec-wallet";
+                bb = mkApp "Run Aztec-bundled Barretenberg" "${config.packages.aztec-bin}/bin/aztec-bb";
+                info = mkApp "Print all Aztec channel metadata as JSON" (lib.getExe infoApp);
+                nargo = mkApp "Run Noir nargo" "${config.packages.aztec-noir}/bin/nargo";
+              }
+              // lib.optionalAttrs pkgs.stdenv.hostPlatform.isLinux {
+                e2e = mkApp "Run all Aztec local-network E2E suites" (lib.getExe config.packages.e2e);
+                getting-started-e2e = mkApp "Run the Aztec getting-started local-network E2E" (lib.getExe config.packages.getting-started-e2e);
+              })
           )
           // channelApps
           // channelGettingStartedE2EApps
@@ -364,7 +376,7 @@
             channel-config = channelConfigCheck;
             channel-info = channelInfoCheck;
           }
-          // lib.optionalAttrs (hasDefault && system == "x86_64-linux") {
+          // lib.optionalAttrs (hasDefault && (system == "x86_64-linux" || pkgs.stdenv.hostPlatform.isDarwin)) {
             smoke = pkgs.runCommand "aztec-bin-smoke" {} ''
               ${pkgs.bash}/bin/bash ${./scripts/smoke-test.sh} ${config.packages.aztec-bin}
               touch $out
@@ -381,6 +393,7 @@
           // {
             mirror = pkgs.mkShell {
               packages = [
+                pkgs.bash
                 pkgs.coreutils
                 pkgs.curl
                 pkgs.git

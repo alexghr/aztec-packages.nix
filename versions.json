@@ -32,6 +32,16 @@
             "url": "https://github.com/foundry-rs/foundry/releases/download/v1.8.5/foundry_v1.8.5_linux_arm64.tar.gz",
             "hash": "sha256-W9zj2t6Lbwpl1PzPaQhCau5JBamIsI3OedCnL+dJgxA="
           }
+        },
+        "aarch64-darwin": {
+          "noir": {
+            "url": "https://github.com/noir-lang/noir/releases/download/v1.0.0-rc.3/noir-aarch64-apple-darwin.tar.gz",
+            "hash": "sha256-RBV0Q1Gcjt6aLffmpO5ROz1J75/dV3TEMxH+bzKIelk="
+          },
+          "foundry": {
+            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.8.5/foundry_v1.8.5_darwin_arm64.tar.gz",
+            "hash": "sha256-VgSXKOJeRKYcfy5JQ4AjsIkMtFhQ/8t8iC+QzZmLr4M="
+          }
         }
       },
       "npm": {
@@ -89,6 +99,16 @@
           "foundry": {
             "url": "https://github.com/foundry-rs/foundry/releases/download/v1.8.5/foundry_v1.8.5_linux_arm64.tar.gz",
             "hash": "sha256-W9zj2t6Lbwpl1PzPaQhCau5JBamIsI3OedCnL+dJgxA="
+          }
+        },
+        "aarch64-darwin": {
+          "noir": {
+            "url": "https://github.com/noir-lang/noir/releases/download/v1.0.0-rc.3/noir-aarch64-apple-darwin.tar.gz",
+            "hash": "sha256-RBV0Q1Gcjt6aLffmpO5ROz1J75/dV3TEMxH+bzKIelk="
+          },
+          "foundry": {
+            "url": "https://github.com/foundry-rs/foundry/releases/download/v1.8.5/foundry_v1.8.5_darwin_arm64.tar.gz",
+            "hash": "sha256-VgSXKOJeRKYcfy5JQ4AjsIkMtFhQ/8t8iC+QzZmLr4M="
           }
         }
       },

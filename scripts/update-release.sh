@@ -173,7 +173,7 @@ trap 'rm -rf "$tmp_dir"' EXIT
 foundry_release_json="$tmp_dir/foundry-release.json"
 install_versions="$tmp_dir/install-versions"
 manifest_json="$tmp_dir/manifest.json"
-systems=(x86_64-linux aarch64-linux)
+systems=(x86_64-linux aarch64-linux aarch64-darwin)
 
 die() {
   echo "$*" >&2
@@ -275,7 +275,6 @@ foundry_asset_suffix() {
   case "$1" in
     x86_64-linux) echo "linux_amd64" ;;
     aarch64-linux) echo "linux_arm64" ;;
-    x86_64-darwin) echo "darwin_amd64" ;;
     aarch64-darwin) echo "darwin_arm64" ;;
     *)
       echo "unknown system: $1" >&2
@@ -288,6 +287,7 @@ noirup_asset_platform() {
   case "$1" in
     x86_64-linux) echo "x86_64-unknown-linux-gnu" ;;
     aarch64-linux) echo "aarch64-unknown-linux-gnu" ;;
+    aarch64-darwin) echo "aarch64-apple-darwin" ;;
     *)
       echo "unknown system: $1" >&2
       return 1

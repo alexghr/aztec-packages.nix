@@ -40,7 +40,10 @@ init_task_guard() {
   fi
 
   uid=$(id -u)
-  current_tasks=$(ps -eLo ruid= | awk -v uid="$uid" '$1 == uid { count++ } END { print count + 0 }')
+  case "$(uname -s)" in
+    Darwin) current_tasks=$(ps -axo ruid= | awk -v uid="$uid" '$1 == uid { count++ } END { print count + 0 }') ;;
+    *) current_tasks=$(ps -eLo ruid= | awk -v uid="$uid" '$1 == uid { count++ } END { print count + 0 }') ;;
+  esac
   task_limit=$((current_tasks + task_headroom))
   hard_limit=$(ulimit -Hu)
 

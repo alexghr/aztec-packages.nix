@@ -23,6 +23,10 @@
         bbJs = "arm64-linux";
         leveldown = "linux-arm64";
       };
+      aarch64-darwin = {
+        bbJs = "arm64-macos";
+        leveldown = "darwin-x64+arm64";
+      };
     }
     .${
       stdenv.hostPlatform.system
@@ -37,6 +41,16 @@ in
     npmDepsHash = release.npmDepsHash;
     nodejs = nodejs_24;
     dontNpmBuild = true;
+
+    # bcrypto hardcodes macOS 10.7 in its native build. Defer rebuilds until
+    # after installing dependencies so its target can match the Darwin stdenv.
+    npmRebuildFlags = lib.optionals stdenv.hostPlatform.isDarwin ["--ignore-scripts"];
+    postConfigure = lib.optionalString stdenv.hostPlatform.isDarwin ''
+      substituteInPlace node_modules/bcrypto/binding.gyp \
+        --replace-fail '"MACOSX_DEPLOYMENT_TARGET": "10.7"' \
+          '"MACOSX_DEPLOYMENT_TARGET": "${stdenv.hostPlatform.darwinMinVersion}"'
+      npm rebuild
+    '';
 
     nativeBuildInputs = lib.optionals stdenv.hostPlatform.isLinux [
       autoPatchelfHook
@@ -117,6 +131,7 @@ in
       platforms = [
         "x86_64-linux"
         "aarch64-linux"
+        "aarch64-darwin"
       ];
       sourceProvenance = with lib.sourceTypes; [binaryNativeCode];
     };
