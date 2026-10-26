@@ -7,6 +7,7 @@
   tag,
   release,
   system,
+  udev,
   zlib,
 }: let
   artifact = release.systems.${system}.foundry;
@@ -25,6 +26,7 @@ in
     ];
 
     buildInputs = lib.optionals stdenv.hostPlatform.isLinux [
+      udev
       openssl
       stdenv.cc.cc.lib
       zlib
