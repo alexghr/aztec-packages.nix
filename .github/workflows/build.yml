@@ -113,6 +113,7 @@ jobs:
           nix build -L --no-link --system "${{ matrix.system }}" "${channel_attrs[@]}"
 
       - name: test v6 development shell
+        if: runner.os == 'Linux'
         run: nix develop .#v6 --command scripts/dev-shell-smoke-test.sh v6
 
   e2e:

@@ -136,10 +136,8 @@ channel_output_suffixes=(
   "-aztec-wallet"
   "-bb"
   "-contracts"
-  "-counter-contract-e2e"
   "-e2e"
   "-foundry"
-  "-getting-started-e2e"
   "-nargo"
   "-noir"
 )
@@ -152,7 +150,7 @@ channel_name_is_valid() {
   fi
 
   case "$channel" in
-    default|mirror|aztec|aztec-anvil|aztec-bb|aztec-bin|aztec-cast|aztec-chisel|aztec-contracts|aztec-forge|aztec-foundry|aztec-nargo|aztec-noir|aztec-wallet|bb|e2e|getting-started-e2e|info|nargo)
+    default|mirror|aztec|aztec-anvil|aztec-bb|aztec-bin|aztec-cast|aztec-chisel|aztec-contracts|aztec-forge|aztec-foundry|aztec-nargo|aztec-noir|aztec-wallet|bb|e2e|info|nargo)
       return 1
       ;;
   esac
@@ -194,11 +192,11 @@ while IFS= read -r channel_entry; do
   if ! jq -e '
     .value
     | if type == "object"
-      then (keys | sort) == ["bbPackage", "l1ArtifactsPackage", "liveNetworks", "npmScope", "pattern", "releaseType", "repository", "tests"]
+      then (keys | sort) == ["bbPackage", "l1ArtifactsPackage", "liveNetworks", "npmScope", "pattern", "releaseType", "repository"]
       else false
       end
   ' <<<"$channel_entry" >/dev/null; then
-    echo "channel $channel_label must contain exactly: bbPackage, l1ArtifactsPackage, liveNetworks, npmScope, pattern, releaseType, repository, tests" >&2
+    echo "channel $channel_label must contain exactly: bbPackage, l1ArtifactsPackage, liveNetworks, npmScope, pattern, releaseType, repository" >&2
     invalid=1
     continue
   fi
@@ -272,27 +270,6 @@ while IFS= read -r channel_entry; do
       invalid=1
     fi
   fi
-
-  if ! jq -e '
-    .value.tests
-    | if type == "object"
-      then (keys | sort) == ["counterContract", "gettingStarted"]
-      else false
-      end
-  ' <<<"$channel_entry" >/dev/null; then
-    echo "channel $channel_label tests must contain exactly: gettingStarted, counterContract" >&2
-    invalid=1
-    continue
-  fi
-
-  for test_name in gettingStarted counterContract; do
-    if ! jq -e --arg test "$test_name" '
-      .value.tests[$test] | type == "boolean"
-    ' <<<"$channel_entry" >/dev/null; then
-      echo "channel $channel_label test $test_name must be boolean" >&2
-      invalid=1
-    fi
-  done
 done < <(jq -c '.channels | to_entries[]' "$channels_json")
 
 default_channel=$(jq -r '.defaultChannel' "$channels_json")
